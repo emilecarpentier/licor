@@ -12,7 +12,7 @@ The current focus is offline telemetry analysis for:
 
 - Le Mans Ultimate
 - LMP2
-- Monza
+- Spa
 - recorded telemetry files
 
 ## MVP
