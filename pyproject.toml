@@ -1,7 +1,7 @@
 [project]
 name = "licor"
 version = "0.1.0"
-description = "Add your description here"
+description = "Offline lift-and-coast telemetry analysis for Le Mans Ultimate."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -13,8 +13,18 @@ dependencies = [
     "streamlit>=1.57.0",
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
     "ruff>=0.15.12",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/licor"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

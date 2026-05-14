@@ -41,10 +41,19 @@ See:
 - `docs/product_spec.md`
 - `docs/data_contract.md`
 - `docs/architecture.md`
+- `docs/lmu_duckdb_format.md`
 - `docs/lmu_channels.md`
 - `docs/lico_zone_definition.md`
+- `docs/race_strategy.md`
+- `docs/dataset_log.md`
 - `docs/roadmap.md`
 - `docs/codex_instructions.md`
+
+## Reference Files
+
+- `config/lmu_telemetry_config.reference.json`: reference copy of the LMU
+  telemetry channel/event configuration. It is safe to version because it
+  contains signal names and sampling frequencies, not driving data.
 
 ## Development
 
