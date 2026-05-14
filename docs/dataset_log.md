@@ -4,6 +4,11 @@ This file documents local telemetry datasets used during LICOR development.
 Raw `.duckdb` files stay outside Git. This log keeps the labels, valid laps, and
 driver notes needed to reproduce analyses.
 
+A machine-readable mirror of the current lap labels lives at
+`config/datasets/spa_lmp2_2026-05-14.json`. Keep this document as the human
+source of driver context, and update the JSON when lap labels used by the
+pipeline change.
+
 ## Label Meaning
 
 The labels `none`, `low`, `medium`, and `high` are collection conditions, not

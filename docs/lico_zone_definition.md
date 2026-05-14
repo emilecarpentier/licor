@@ -36,6 +36,19 @@ Each zone should contain enough distance after the braking/corner phase to see
 whether the LICO action affected the car beyond the braking point. The zone
 should not automatically extend to the end of the lap.
 
+LICOR should distinguish two related windows:
+
+- the causal LICO window, from throttle release to brake start;
+- the validation window, which may extend through the corner or complex to check
+  whether entry speed, minimum speed, rotation, or exit quality degraded.
+
+For simple corners such as Spa T1, the validation end can often be a stable
+full-throttle point on the following straight. For complexes such as Les Combes,
+that rule can be misleading because the car is still negotiating multiple
+corners. In those cases, the end point should be driver-reviewed and used more
+as a quality-control boundary than as proof that all local time delta came from
+the LICO action.
+
 ## Why This Matters
 
 The purpose of LICOR is not to ask:
@@ -168,15 +181,102 @@ The first implementation can use manually reviewed zone definitions for Spa.
 Each zone should include:
 
 - `zone_id`;
-- `name`;
+- `turn_numbers`;
+- `display_label`;
 - `start_distance_m`;
 - `lico_window_start_m`;
 - `brake_reference_m`;
 - `end_distance_m`;
+- `lico_eligible`;
+- `optimization_role`;
+- `validation_end_rule`;
+- `review_status`;
 - `notes`.
 
 These definitions should be treated as editable driver-reviewed assumptions, not
 as permanent truth.
+
+The current editable draft lives at
+`config/track_zones/spa_lmp2_zones.draft.json`. Distances intentionally remain
+blank until reviewed by the driver. This keeps the analysis honest: code can
+validate completeness, but it should not guess causal boundaries.
+
+For generalization to future circuits, zone identifiers should be based on
+generally known turn numbers rather than local corner names. Corner names can be
+kept in notes for driver review, but they should not drive the analysis.
+
+LICO eligibility should be binary. The table can exclude structural
+non-candidates, such as a second chicane brake pressure that cannot reasonably be
+used for lift-and-coast. It should not encode intensity-specific judgments such
+as "heavy LICO is bad here"; the later cost/benefit model should learn that from
+continuous lift distance and local time/fuel outcomes.
+
+For the first Spa proposal pass:
+
+- `brake_reference_m` is proposed from the earliest observed brake start in the
+  clean full-push laps;
+- `lico_window_start_m` is proposed from the earliest high-LICO lift start minus
+  `30 m`;
+- `end_distance_m` stays manual because the user wants to validate zone endings
+  visually on a circuit map.
+
+The current validation report can display a true XY circuit map only when XY/GPS
+coordinates are available. The observed LMU DuckDB files do not include such
+coordinates, so LICOR currently generates a distance-strip view from lap distance
+and path-lateral telemetry. This is still useful for checking ordering and
+relative boundaries, but final map validation will need either an external track
+map or a telemetry source with coordinates.
+
+LICOR now also supports a top-down Spa validation report using a local
+OpenStreetMap-derived GeoJSON trace. This report overlays proposed zone starts,
+conservative full-push brake references, and median `none` brake points. Because
+the trace is external to LMU, it is scaled to the observed telemetry lap length
+and should be checked for start/finish offset before finalizing distances.
+
+The top-down report can generate offset variants. A negative offset moves LMU
+distance markers earlier on the OSM trace and is the expected correction when
+brake markers appear after corner apexes.
+
+Initial `validation_end` markers are generated only as visual proposals. The
+default rule places a zone end shortly before the next zone start while enforcing
+a minimum distance after the brake reference. These markers must be reviewed by
+the driver before they are copied into the editable zone table.
+
+Driver review notes from the first start/end top-down map:
+
+- T01 automatic end was much too far and should be shortened before Phase 3.
+- T05-T06 end should be between T6 and T7 to avoid pulling poor T7 execution into
+  the Les Combes zone.
+- T08 automatic end looked acceptable.
+- T09 automatic end was too far; T10-T11 also needs a fallback zone start marker
+  because no high-LICO start was detected there.
+- T10-T11 and T12-T13 automatic ends looked acceptable.
+- T14 end should be just after T15.
+- T18 end was too early and should include the first Bus Stop rotation.
+
+The second review accepted all short-end candidates except T18, which was moved
+15 m later. Driver-reviewed candidate zones are now written to
+`config/track_zones/spa_lmp2_zones.draft.json`; T19 remains a validation-only
+non-candidate.
+
+## Current Detection Heuristic
+
+The current code detects braking references before manually reviewed Spa zones
+exist. It treats `Brake Pos >= 5%` as brake active, filters very short segments,
+and only merges very small brake-input chatter. Deliberate separate brake
+pressures, including the two Bus Stop pressures, should remain separate detected
+zones.
+
+LICO detection then looks backward from each brake start. It starts the LICO
+window when throttle first leaves full throttle, but only validates the event as
+LICO when there is a genuine zero-input coast phase before the brake input. The
+output records continuous variables such as lift start distance, lift distance
+before brake, duration, distance, minimum throttle, average throttle, and release
+rate.
+
+These detected zones are candidates, not final causal track zones. The next
+driver-review step should map them to named Spa zones and choose where each zone
+should end after the corner or complex.
 
 ## Example Zone Observation
 

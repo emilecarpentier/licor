@@ -6,7 +6,7 @@ when a phase changes meaningfully.
 
 ## Phase 0: Project Foundation
 
-Status: mostly complete.
+Status: complete.
 
 - [x] Document the LMU DuckDB telemetry format.
 - [x] Add the LMU telemetry reference config to the repo.
@@ -19,45 +19,69 @@ Status: mostly complete.
 
 ## Phase 1: First Controlled Spa Dataset
 
-Status: ready to implement.
+Status: lap summary pipeline complete.
 
 - [x] Keep raw telemetry files outside Git.
 - [x] Add a dataset log for controlled runs.
-- [ ] Convert `docs/dataset_log.md` into a machine-readable label file if needed.
-- [ ] Load multiple LMU telemetry files from a local folder.
-- [ ] Extract lap intervals and filter out-laps/warm-up laps.
-- [ ] Produce a lap summary table with fuel usage and basic validation metrics.
-- [ ] Add tests for lap summary and valid-lap filtering.
+- [x] Convert `docs/dataset_log.md` into a machine-readable label file if needed.
+- [x] Load multiple LMU telemetry files from a local folder.
+- [x] Extract lap intervals and filter out-laps/warm-up laps.
+- [x] Produce a lap summary table with fuel usage and basic validation metrics.
+- [x] Add tests for lap summary and valid-lap filtering.
 
 Recommended next Codex task:
 
 ```text
-Implement the first analysis pipeline: load the local Spa DuckDB files listed in
-docs/dataset_log.md, compute lap summaries, apply valid/excluded lap labels, and
-write tests for the lap summary logic.
+Start Phase 2 by detecting braking zones from Brake Pos on the valid lap summary
+set, then write synthetic tests for brake segment detection and merging.
 ```
 
 ## Phase 2: Braking And LICO Detection
 
-- [ ] Detect braking zones from `Brake Pos`.
-- [ ] Merge nearby braking segments into meaningful corners/zones.
-- [ ] Fix Bus Stop-style split braking detection.
+- [x] Detect braking zones from `Brake Pos`.
+- [x] Merge nearby braking segments into meaningful corners/zones.
+- [x] Keep distinct Bus Stop-style brake presses as separate detected zones.
 - [ ] Define driver-reviewed Spa track zones around approach, LICO, braking,
   corner/complex, and exit stabilization phases.
-- [ ] Detect throttle lift before braking zones.
-- [ ] Associate candidate LICO zones with lap distance and braking point.
-- [ ] Add tests for brake segment detection and segment merging.
+- [x] Detect throttle lift before braking zones.
+- [x] Associate candidate LICO zones with lap distance and braking point.
+- [x] Add tests for brake segment detection and segment merging.
+
+Remaining Phase 2 work:
+
+```text
+Fill and driver-review the turn-numbered
+config/track_zones/spa_lmp2_zones.draft.json around the detected brake
+references, mark structural non-candidates, then validate thresholds and merge
+behavior corner by corner.
+```
+
+Implementation note:
+
+- [x] Add an editable track-zone config schema and draft Spa zone file.
+- [x] Add tests for track-zone loading and validation.
+- [x] Add proposal logic for brake references and LICO window starts.
+- [x] Build a zone-boundary visualization workflow for driver validation.
+- [x] Add a Spa top-down map workflow from a local OpenStreetMap-derived trace.
+- [ ] Driver-review top-down alignment, zone starts, brake references, and
+  validation endings.
 
 ## Phase 3: Cost/Benefit Analysis
 
 - [ ] Compare push and LICO behavior by track zone.
 - [ ] Estimate fuel saved and local time lost by zone.
-- [ ] Convert `none`, `low`, `medium`, and `high` collection labels into continuous
+- [x] Convert `none`, `low`, `medium`, and `high` collection labels into continuous
   telemetry measurements such as lift distance and lift duration.
 - [ ] Fit initial smooth zone-level cost/benefit curves.
 - [ ] Rank zones by fuel saved per second lost.
 - [ ] Let the driver review and correct zone interpretation.
 - [ ] Treat full-lap deltas as sanity checks, not objective functions.
+
+Implementation note:
+
+- [x] Add a first `zone_pass` extraction table from driver-reviewed track zones.
+- [x] Add synthetic tests for push, LICO, skipped zones, and incomplete zone
+  coverage.
 
 ## Phase 4: Pit Stops And Race Strategy
 
