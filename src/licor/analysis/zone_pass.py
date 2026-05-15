@@ -95,6 +95,12 @@ def _zone_pass_row(
             "fuel_end_l": fuel_end,
             "fuel_used_l": fuel_start - fuel_end if fuel_start is not None and fuel_end is not None else None,
             "elapsed_time_s": float(last["ts"]) - float(first["ts"]),
+            "zone_start_throttle_pct": _float_or_none(first.get("throttle_pct")),
+            "zone_start_zero_throttle": (
+                float(first["throttle_pct"]) <= config.zero_input_throttle_pct
+                if first.get("throttle_pct") is not None
+                else None
+            ),
             "brake_start_m": _float_or_none(brake_start.get("lap_distance_m")) if brake_start else None,
             "brake_start_speed_kph": _float_or_none(brake_start.get("ground_speed_kph")) if brake_start else None,
             "max_brake_pct": float(zone_samples["brake_pct"].max()),
@@ -129,6 +135,8 @@ def _base_row(
         "fuel_end_l": None,
         "fuel_used_l": None,
         "elapsed_time_s": None,
+        "zone_start_throttle_pct": None,
+        "zone_start_zero_throttle": None,
         "has_lico": False,
         "lico_start_m": None,
         "lico_end_m": None,
@@ -160,6 +168,11 @@ def _lico_metrics(
     if pre_brake.is_empty():
         return _empty_lico_metrics()
 
+    lift_segments = _threshold_segments(
+        pre_brake,
+        value_column="throttle_pct",
+        threshold=config.lift_start_throttle_pct,
+    )
     zero_segments = _threshold_segments(
         pre_brake,
         value_column="throttle_pct",
@@ -168,20 +181,22 @@ def _lico_metrics(
     zero_segments = [
         segment for segment in zero_segments if segment["duration_s"] >= config.min_zero_input_duration_s
     ]
-    if not zero_segments:
+    lift_segments = [
+        segment
+        for segment in lift_segments
+        if segment["duration_s"] >= config.min_lift_duration_s
+        and segment["distance_m"] >= config.min_lift_distance_m
+    ]
+    if not zero_segments or not lift_segments:
         return _empty_lico_metrics()
 
-    first_zero = zero_segments[0]
-    release_candidates = pre_brake.filter(
-        (pl.col("throttle_pct") <= config.lift_start_throttle_pct)
-        & (pl.col("ts") <= first_zero["start_ts"])
-    )
-    if release_candidates.is_empty():
+    lift = _lift_segment_for_zero_input(lift_segments, zero_segments)
+    if lift is None:
         return _empty_lico_metrics()
 
-    release_start = release_candidates.row(0, named=True)
     lico_rows = pre_brake.filter(
-        (pl.col("ts") >= release_start["ts"])
+        (pl.col("ts") >= lift["start_ts"])
+        & (pl.col("ts") <= lift["end_ts"])
         & (pl.col("throttle_pct") <= config.lift_start_throttle_pct)
     )
     if lico_rows.is_empty():
@@ -191,8 +206,6 @@ def _lico_metrics(
     end = lico_rows.row(-1, named=True)
     duration_s = float(end["ts"]) - float(start["ts"])
     distance_m = float(end["lap_distance_m"]) - float(start["lap_distance_m"])
-    if duration_s < config.min_lift_duration_s or distance_m < config.min_lift_distance_m:
-        return _empty_lico_metrics()
 
     minimum_throttle = float(lico_rows["throttle_pct"].min())
     return {
@@ -211,6 +224,20 @@ def _lico_metrics(
         "minimum_throttle_pct_before_brake": minimum_throttle,
         "average_throttle_pct_before_brake": float(pre_brake["throttle_pct"].mean()),
     }
+
+
+def _lift_segment_for_zero_input(
+    lift_segments: list[dict[str, float]],
+    zero_segments: list[dict[str, float]],
+) -> dict[str, float] | None:
+    for zero_segment in zero_segments:
+        for lift_segment in lift_segments:
+            if (
+                lift_segment["start_ts"] <= zero_segment["start_ts"]
+                and zero_segment["start_ts"] <= lift_segment["end_ts"]
+            ):
+                return lift_segment
+    return None
 
 
 def _empty_lico_metrics() -> dict[str, float | bool | None]:
@@ -252,7 +279,10 @@ def _segment_from_rows(rows: list[dict[str, Any]]) -> dict[str, float]:
     return {
         "start_ts": float(start["ts"]),
         "end_ts": float(end["ts"]),
+        "start_lap_distance_m": float(start["lap_distance_m"]),
+        "end_lap_distance_m": float(end["lap_distance_m"]),
         "duration_s": float(end["ts"]) - float(start["ts"]),
+        "distance_m": float(end["lap_distance_m"]) - float(start["lap_distance_m"]),
     }
 
 
@@ -323,6 +353,8 @@ _ZONE_PASS_COLUMNS = [
     "fuel_end_l",
     "fuel_used_l",
     "elapsed_time_s",
+    "zone_start_throttle_pct",
+    "zone_start_zero_throttle",
     "has_lico",
     "lico_start_m",
     "lico_end_m",
@@ -357,6 +389,8 @@ _ZONE_PASS_SCHEMA = {
     "fuel_end_l": pl.Float64,
     "fuel_used_l": pl.Float64,
     "elapsed_time_s": pl.Float64,
+    "zone_start_throttle_pct": pl.Float64,
+    "zone_start_zero_throttle": pl.Boolean,
     "has_lico": pl.Boolean,
     "lico_start_m": pl.Float64,
     "lico_end_m": pl.Float64,

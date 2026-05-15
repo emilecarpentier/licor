@@ -34,6 +34,8 @@ def test_extracts_push_and_lico_zone_pass_metrics():
     assert push["has_lico"] is False
     assert push["fuel_used_l"] == pytest.approx(0.2)
     assert push["elapsed_time_s"] == pytest.approx(6.0)
+    assert push["zone_start_throttle_pct"] == pytest.approx(100.0)
+    assert push["zone_start_zero_throttle"] is False
     assert push["brake_start_m"] == pytest.approx(250.0)
     assert push["brake_start_speed_kph"] == pytest.approx(230.0)
     assert push["min_speed_kph"] == pytest.approx(200.0)
@@ -41,6 +43,7 @@ def test_extracts_push_and_lico_zone_pass_metrics():
 
     lico = passes.filter(pl.col("lap_number") == 2).row(0, named=True)
     assert lico["has_lico"] is True
+    assert lico["zone_start_zero_throttle"] is False
     assert lico["lico_start_m"] == pytest.approx(170.0)
     assert lico["lico_end_m"] == pytest.approx(240.0)
     assert lico["lico_start_distance_before_brake_m"] == pytest.approx(80.0)
@@ -105,6 +108,51 @@ def test_marks_zone_pass_with_missing_boundary_coverage():
     assert passes.row(0, named=True)["validity_label"] == "incomplete_zone_coverage"
 
 
+def test_flags_zone_start_that_begins_at_zero_throttle():
+    samples = _synthetic_lap_samples(lap_number=1, has_lico=True)
+    table = TrackZoneTable(
+        track_name="Synthetic Spa",
+        car_class="LMP2_TEST",
+        zones=[
+            TrackZoneDefinition(
+                zone_id="synthetic_late_start",
+                turn_numbers=(1,),
+                display_label="T01 late",
+                start_distance_m=180.0,
+                lico_window_start_m=180.0,
+                brake_reference_m=250.0,
+                end_distance_m=400.0,
+                lico_eligible=True,
+                optimization_role="candidate",
+                validation_end_rule="manual_distance",
+                review_status="driver_reviewed",
+            )
+        ],
+    )
+
+    passes = extract_zone_passes(samples, table)
+
+    row = passes.row(0, named=True)
+    assert row["zone_start_throttle_pct"] == pytest.approx(0.0)
+    assert row["zone_start_zero_throttle"] is True
+
+
+def test_ignores_isolated_throttle_artifact_before_true_lico():
+    samples = _synthetic_lap_with_throttle_artifact()
+    table = _zone_table()
+
+    passes = extract_zone_passes(
+        samples,
+        table,
+        config=ZonePassConfig(min_zero_input_duration_s=0.2),
+    )
+
+    row = passes.row(0, named=True)
+    assert row["has_lico"] is True
+    assert row["lico_start_m"] == pytest.approx(220.0)
+    assert row["lico_start_distance_before_brake_m"] == pytest.approx(30.0)
+
+
 def _zone_table() -> TrackZoneTable:
     return TrackZoneTable(
         track_name="Synthetic Spa",
@@ -157,5 +205,33 @@ def _throttle_at(distance_m: int, has_lico: bool) -> float:
     if distance_m == 170:
         return 90.0
     if 180 <= distance_m <= 240:
+        return 0.0
+    return 100.0
+
+
+def _synthetic_lap_with_throttle_artifact() -> pl.DataFrame:
+    rows = []
+    for index, distance_m in enumerate(range(0, 501, 10)):
+        rows.append(
+            {
+                "lap_number": 1,
+                "lap_start_ts": 0.0,
+                "lap_end_ts": 10.0,
+                "ts": index * 0.2,
+                "lap_elapsed_s": index * 0.2,
+                "lap_distance_m": float(distance_m),
+                "brake_pct": 70.0 if 250.0 <= distance_m <= 310.0 else 0.0,
+                "throttle_pct": _artifact_throttle_at(distance_m),
+                "ground_speed_kph": 260.0 - (distance_m - 100.0) / 5.0,
+                "fuel_level_l": 80.0 - distance_m / 1500.0,
+            }
+        )
+    return pl.DataFrame(rows)
+
+
+def _artifact_throttle_at(distance_m: int) -> float:
+    if distance_m == 120:
+        return 71.07635498046875
+    if 220 <= distance_m <= 240:
         return 0.0
     return 100.0

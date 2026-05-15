@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "dataset_id": "spa_lmp2_2026-05-14",
+  "track_name": "Circuit de Spa-Francorchamps",
+  "car_class": "LMP2_ELMS",
+  "review_status": "driver_reviewed",
+  "notes": "First visual review of the descriptive zone curve report.",
+  "zone_annotations": [
+    {
+      "zone_id": "spa_t01",
+      "signal_tags": ["fuel_signal_plausible", "time_signal_unclear"],
+      "notes": "Fuel relation makes sense. Time curve shows little loss after excluding a driver braking error, which is surprising and needs review."
+    },
+    {
+      "zone_id": "spa_t05_t06",
+      "signal_tags": ["clean_signal", "classic_lico_zone"],
+      "notes": "Clean relationship; classic lift-and-coast zone."
+    },
+    {
+      "zone_id": "spa_t08",
+      "signal_tags": ["needs_investigation", "noisy_time_signal", "zone_start_adjusted", "throttle_artifact_corrected"],
+      "notes": "LICO distance appeared clustered near 100 m before braking, including low LICO. Driver review moved zone start 20 m earlier. Lap 16 contained impossible repeated 71.076% throttle artifacts before the real lift; extraction now ignores isolated pre-coast throttle dips."
+    },
+    {
+      "zone_id": "spa_t09",
+      "signal_tags": ["no_credible_lico_signal"],
+      "notes": "Driver review: impossible to meaningfully lift-and-coast in this corner; current data shows no useful signal."
+    },
+    {
+      "zone_id": "spa_t10_t11",
+      "signal_tags": ["clean_signal", "fuel_signal_plausible", "time_signal_plausible"],
+      "notes": "Clean curve, especially fuel, with useful time relationship."
+    },
+    {
+      "zone_id": "spa_t12_t13",
+      "signal_tags": ["fuel_signal_plausible", "time_signal_unclear"],
+      "notes": "Fuel relation is credible. Time gains/losses are small and visually unclear."
+    },
+    {
+      "zone_id": "spa_t14",
+      "signal_tags": ["fuel_signal_plausible", "noisy_time_signal"],
+      "notes": "Fuel relation is cleaner than time. Driver identified lap 24/T14 as a pilot error/outlier."
+    },
+    {
+      "zone_id": "spa_t18",
+      "signal_tags": ["clean_signal", "fuel_signal_plausible", "time_signal_plausible"],
+      "notes": "Extremely clean fuel and time relationship."
+    }
+  ],
+  "zone_pass_exclusions": [
+    {
+      "lap_number": 24,
+      "zone_id": "spa_t01",
+      "reason": "driver_missed_brake_point",
+      "notes": "Exclude only this lap-zone observation; the rest of lap 24 remains usable."
+    },
+    {
+      "lap_number": 24,
+      "zone_id": "spa_t14",
+      "reason": "driver_error_outlier",
+      "notes": "Exclude only this lap-zone observation; the rest of lap 24 remains usable."
+    }
+  ]
+}

@@ -38,15 +38,15 @@
       "zone_id": "spa_t08",
       "turn_numbers": [8],
       "display_label": "T08",
-      "start_distance_m": 2652.524658,
-      "lico_window_start_m": 2652.524658,
+      "start_distance_m": 2632.524658,
+      "lico_window_start_m": 2632.524658,
       "brake_reference_m": 2778.938477,
       "end_distance_m": 3000.456543,
       "lico_eligible": true,
       "optimization_role": "candidate",
       "validation_end_rule": "manual_distance",
       "review_status": "driver_reviewed",
-      "notes": "Bruxelles/Rivage context only. Zone start and validation end driver-reviewed on top-down map with -130 m offset."
+      "notes": "Bruxelles/Rivage context only. Zone start moved 20 m earlier after driver review because detected LICO was clustered near the previous zone start."
     },
     {
       "zone_id": "spa_t09",

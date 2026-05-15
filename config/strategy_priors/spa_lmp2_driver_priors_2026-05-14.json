@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "dataset_id": "spa_lmp2_2026-05-14",
+  "track_name": "Circuit de Spa-Francorchamps",
+  "car_class": "LMP2_ELMS",
+  "notes": "Driver feasibility ratings from 0 to 5. T12 was listed twice by mistake; interpreted as T12-T13 = 4/5 and T14 = 2/5 based on prior driver comments.",
+  "zones": [
+    {
+      "zone_id": "spa_t05_t06",
+      "display_label": "T05-T06",
+      "feasibility_score": 5,
+      "strategy_role": "preferred",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": null,
+      "notes": "Ideal LICO zone."
+    },
+    {
+      "zone_id": "spa_t18",
+      "display_label": "T18",
+      "feasibility_score": 5,
+      "strategy_role": "preferred",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": null,
+      "notes": "Ideal LICO zone."
+    },
+    {
+      "zone_id": "spa_t12_t13",
+      "display_label": "T12-T13",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": true,
+      "max_lico_distance_m": null,
+      "notes": "Driver says LICO is feasible; current data remains diagnostic."
+    },
+    {
+      "zone_id": "spa_t08",
+      "display_label": "T08",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": true,
+      "max_lico_distance_m": null,
+      "notes": "Driver says LICO is feasible; T08 was recalibrated after telemetry review."
+    },
+    {
+      "zone_id": "spa_t01",
+      "display_label": "T01",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": true,
+      "max_lico_distance_m": null,
+      "notes": "Driver says LICO is feasible; current data remains diagnostic."
+    },
+    {
+      "zone_id": "spa_t10_t11",
+      "display_label": "T10-T11",
+      "feasibility_score": 2,
+      "strategy_role": "limited",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": 80.0,
+      "notes": "Driver says only low/medium LICO is realistic here."
+    },
+    {
+      "zone_id": "spa_t14",
+      "display_label": "T14",
+      "feasibility_score": 2,
+      "strategy_role": "limited",
+      "allow_diagnostic_model": true,
+      "max_lico_distance_m": 40.0,
+      "notes": "Driver says only very little LICO is possible here."
+    },
+    {
+      "zone_id": "spa_t19",
+      "display_label": "T19",
+      "feasibility_score": 0,
+      "strategy_role": "excluded",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": null,
+      "notes": "Second Bus Stop brake pressure; structural non-candidate."
+    },
+    {
+      "zone_id": "spa_t09",
+      "display_label": "T09",
+      "feasibility_score": 0,
+      "strategy_role": "excluded",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": null,
+      "notes": "Driver and current data agree no useful LICO candidate."
+    }
+  ]
+}

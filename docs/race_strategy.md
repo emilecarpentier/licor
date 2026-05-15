@@ -138,6 +138,8 @@ The strategy layer should eventually accept:
 
 - race length in minutes;
 - expected lap time range;
+- fixed race-lap overrides when a championship result or regulation provides a
+  better estimate than duration/lap-time arithmetic;
 - tank capacity;
 - starting fuel rules;
 - fuel per lap at push baseline;
@@ -147,3 +149,47 @@ The strategy layer should eventually accept:
 - mandatory stop rules;
 - tire change time, if relevant;
 - stint constraints or driver swap constraints, if relevant.
+
+## Current Implementation
+
+`src/licor/analysis/race_strategy.py` now provides a first deterministic
+strategy layer:
+
+- estimate race laps from race duration and baseline lap time;
+- compute required stop count from tank capacity and fuel per lap;
+- compare full-push and LICO-style scenarios on total estimated time;
+- compute fuel-saving targets needed for lower stop counts.
+
+The first Spa strategy artifacts are generated locally under `data/processed/`:
+
+- `spa_lmp2_race_strategy_scenarios.csv`;
+- `spa_lmp2_fuel_saving_targets.csv`.
+
+For Spa ELMS, the driver supplied a championship-observed distance of `48` laps.
+The push baseline needs `2` stops, and a `1`-stop strategy requires roughly
+`0.321 L/lap` saved versus push baseline. Current global `medium` and `high`
+LICO laps meet that target in aggregate, but they should be treated as
+feasibility evidence rather than final recommendations.
+
+The first conservative zone-level optimizer uses only `model_ready` zone model
+points. With the current Spa models, `T05-T06`, `T10-T11`, and `T18` together
+reach approximately `0.307 L/lap`, leaving a shortfall of roughly `0.014 L/lap`
+against the 1-stop target. The current plan is therefore marked
+`target_unreachable` unless diagnostic-only zones are explicitly allowed or new
+targeted data improves the model-ready set.
+
+Driver strategy priors now provide that explicit allowance. The current Spa
+driver-prior file rates LICO feasibility as:
+
+- `5/5`: T05-T06, T18;
+- `4/5`: T12-T13, T08, T01;
+- `2/5`: T10-T11, T14;
+- `0/5`: T19, T09.
+
+Using those priors, the prudent optimizer can include feasible diagnostic zones
+without altering the model-predicted time loss. Driver ratings are treated as
+feasibility/capping metadata, not as time penalties. The current prudent plan
+reaches the 48-lap one-stop target with a small fuel surplus and distributes
+LICO across T01, T05-T06, T08, T10-T11, T12-T13, and T18 while leaving T14 at
+`0 m`. This should be reviewed visually before being promoted to a
+recommendation.
