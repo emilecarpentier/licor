@@ -19,6 +19,10 @@ from licor.reports.zone_model_report import (
     create_zone_model_report_figure,
     write_zone_model_report_html,
 )
+from licor.reports.zone_plan_report import (
+    create_zone_plan_report_figure,
+    write_zone_plan_report_html,
+)
 from licor.reports.zone_telemetry_report import (
     build_zone_telemetry_window,
     create_zone_telemetry_report_figure,
@@ -32,6 +36,7 @@ __all__ = [
     "create_zone_validation_figure",
     "create_zone_curve_report_figure",
     "create_zone_model_report_figure",
+    "create_zone_plan_report_figure",
     "create_zone_telemetry_report_figure",
     "interpolate_track_position",
     "load_geojson_track_points",
@@ -40,6 +45,7 @@ __all__ = [
     "write_zone_validation_html",
     "write_zone_curve_report_html",
     "write_zone_model_report_html",
+    "write_zone_plan_report_html",
     "write_zone_telemetry_report_html",
     "zone_markers_from_proposals",
 ]

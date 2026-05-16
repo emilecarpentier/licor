@@ -2,9 +2,10 @@
 
 ## Project Direction
 
-LICOR is currently an offline telemetry analysis project. Prioritize a reliable
-offline pipeline before adding live telemetry, audio cues, overlays, or machine
-learning.
+LICOR is currently an offline telemetry analysis project moving toward a
+validated recommendation loop. Prioritize reliable offline modeling and reports,
+then a minimal live audio-cue validation path. Full overlays, polished apps, and
+heavier machine learning come after the recommendation loop is credible.
 
 The project's first target is:
 
@@ -40,9 +41,11 @@ When adding code, prefer this order:
 9. zone-level optimization;
 10. pit stop/refill analysis;
 11. race strategy optimization;
-12. reports and plots;
-13. Streamlit dashboard;
-14. live features.
+12. decision-quality reports, marginal diagnostics, and sensitivity analysis;
+13. controlled-random and targeted data collection protocols;
+14. minimal live audio cues for empirical recommendation validation;
+15. Streamlit dashboard;
+16. cross-circuit generalization and heavier statistical models.
 
 ## Technical Preferences
 
@@ -50,7 +53,8 @@ When adding code, prefer this order:
 - Use Pydantic for explicit data contracts or configuration models when useful.
 - Use DuckDB only when persistent analytical storage is actually needed.
 - Use Plotly for interactive charts.
-- Use Streamlit only after the core analysis functions work.
+- Use Streamlit only after the core analysis functions and recommendation
+  validation reports work.
 - Use Pytest for small, focused tests.
 - Use Ruff for formatting and lint checks.
 
@@ -74,8 +78,11 @@ When adding code, prefer this order:
   than isolated lap-time deltas.
 - Keep pit stop telemetry separate from LICO calibration telemetry, but use it to
   estimate pit loss, refill duration, and refill rate.
-- Do not add machine learning until transparent heuristics have been validated.
-- Do not expand to other cars or tracks until the Spa LMP2 workflow is useful.
+- Do not add heavier machine learning until transparent heuristics and simple
+  continuous models have been validated.
+- Use Spa LMP2 as the first calibration dataset. Cross-circuit generalization
+  should reuse learned structure from Spa, but still require small push and LICO
+  calibration samples plus manual review for out-of-distribution zones.
 
 ## Documentation Rules
 

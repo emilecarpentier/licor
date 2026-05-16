@@ -11,6 +11,27 @@ from licor.analysis.lap_sanity import (
     FullLapSanityConfig,
     summarize_full_lap_sanity,
 )
+from licor.analysis.collection_protocol import (
+    CollectionProtocol,
+    CollectionProtocolSession,
+    load_collection_protocol,
+)
+from licor.analysis.live_plan import (
+    LiveCuePlanConfig,
+    build_live_cue_executions_from_zone_passes,
+    build_live_cue_plan,
+    empty_live_cue_execution_frame,
+    empty_live_cue_plan_frame,
+)
+from licor.analysis.live_cue_runner import (
+    LiveCueRunnerConfig,
+    empty_live_cue_accuracy_frame,
+    empty_live_cue_event_log_frame,
+    load_live_cue_plan,
+    simulate_live_cue_events,
+    summarize_live_cue_event_accuracy,
+    validate_live_cue_plan,
+)
 from licor.analysis.pit_stop import (
     PitStopConfig,
     extract_pit_stop_observations,
@@ -31,6 +52,12 @@ from licor.analysis.strategy_priors import (
 from licor.analysis.zone_optimizer import (
     ZoneOptimizerConfig,
     optimize_zone_lico_plan,
+)
+from licor.analysis.zone_plan_diagnostics import (
+    ZonePlanSensitivityScenario,
+    build_zone_marginal_efficiency,
+    default_zone_plan_sensitivity_scenarios,
+    summarize_zone_plan_sensitivity,
 )
 from licor.analysis.driver_review import (
     DriverZoneReview,
@@ -83,10 +110,14 @@ from licor.analysis.zone_detection import (
 
 __all__ = [
     "BrakeZoneDetectionConfig",
+    "CollectionProtocol",
+    "CollectionProtocolSession",
     "DatasetLapLabels",
     "DriverZoneReview",
     "FullLapSanityConfig",
     "LapSummaryConfig",
+    "LiveCuePlanConfig",
+    "LiveCueRunnerConfig",
     "LicoZoneDetectionConfig",
     "PitStopConfig",
     "RaceStrategyConfig",
@@ -101,6 +132,7 @@ __all__ = [
     "ZoneAnnotation",
     "ZonePassConfig",
     "ZonePassExclusion",
+    "ZonePlanSensitivityScenario",
     "ZoneStrategyPrior",
     "ZoneSummaryConfig",
     "assign_detected_zones_to_track_zones",
@@ -108,21 +140,30 @@ __all__ = [
     "attach_track_zones_to_lico",
     "apply_zone_pass_review",
     "build_fuel_saving_targets",
+    "build_live_cue_executions_from_zone_passes",
+    "build_live_cue_plan",
     "build_zone_curve_bins",
     "build_zone_curve_points",
     "build_zone_piecewise_models",
     "build_lap_telemetry",
     "compare_push_and_lico_strategy",
+    "build_zone_marginal_efficiency",
     "detect_brake_segments",
     "detect_braking_zones",
     "detect_lift_and_coast_zones",
+    "empty_live_cue_execution_frame",
+    "empty_live_cue_accuracy_frame",
+    "empty_live_cue_event_log_frame",
+    "empty_live_cue_plan_frame",
     "estimated_race_laps",
     "evaluate_race_strategy_scenarios",
     "extract_pit_stop_observations",
     "extract_zone_passes",
     "filter_valid_laps",
     "load_dataset_lap_labels",
+    "load_collection_protocol",
     "load_driver_zone_review",
+    "load_live_cue_plan",
     "load_strategy_prior_table",
     "load_track_zone_table",
     "merge_brake_segments",
@@ -130,10 +171,15 @@ __all__ = [
     "propose_track_zone_distances",
     "rank_zone_cost_benefit",
     "required_stop_count",
+    "default_zone_plan_sensitivity_scenarios",
     "summarize_labeled_dataset",
     "summarize_full_lap_sanity",
+    "simulate_live_cue_events",
+    "summarize_live_cue_event_accuracy",
     "summarize_laps",
+    "summarize_zone_plan_sensitivity",
     "summarize_zone_curve_bins",
     "summarize_zone_costs",
     "track_zones_to_frame",
+    "validate_live_cue_plan",
 ]

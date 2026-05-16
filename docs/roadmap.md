@@ -32,9 +32,9 @@ Status: lap summary pipeline complete.
 Recommended next Codex task:
 
 ```text
-Review the driver-prior Spa 48-lap candidate plan visually and decide which
-diagnostic zones should graduate into optimization recommendations or receive
-targeted telemetry collection.
+Update the Spa learning loop: add marginal/sensitivity diagnostics, define a
+new controlled-random and targeted data collection protocol, then prepare a
+minimal live audio-cue validation path.
 ```
 
 ## Phase 2: Braking And LICO Detection
@@ -129,16 +129,47 @@ Implementation note:
 
 ## Phase 5: Reports And App
 
+Status: re-scoped. Reports remain next; Streamlit should wait until the
+recommendation loop is credible.
+
+- [x] Add marginal fuel/time efficiency diagnostics for each zone model.
+- [x] Add sensitivity reports for optimizer plans, including best-ratio caps,
+  stricter driver caps, diagnostic-zone exclusion, and fuel safety margins.
+- [x] Define a Spa v2 data collection protocol with controlled-random LICO,
+  targeted zone variation, and recommendation-execution runs.
+- [x] Add an exportable LICO plan format suitable for live cues.
+- [x] Add a replay-style execution schema for planned-versus-observed live cue
+  validation.
+- [x] Build a minimal live-cue trigger/logging prototype that consumes an
+  exported plan and logs cue timing accuracy.
+- [x] Add an injectable replay/audio wrapper around the tested live-cue runner.
+- [ ] Validate the real audio adapter against LMU telemetry during a driving
+  session.
 - [ ] Generate Plotly charts for speed, throttle, brake, fuel, and lap distance.
 - [x] Generate zone-level comparison reports.
-- [ ] Build a simple Streamlit dashboard around the tested analysis functions.
+- [ ] Build a simple Streamlit dashboard around the tested analysis functions
+  after offline reports and live-cue validation are useful.
 - [ ] Keep analysis logic out of the app layer.
 
-## Phase 6: Generalization
+## Phase 6: Modeling And Generalization
 
-- [ ] Test the pipeline on another circuit using mostly push laps.
-- [ ] Use Spa as the first calibration dataset.
-- [ ] Add lightweight statistical models only after heuristic outputs are credible.
+- [ ] Use Spa as the first calibration and methodology dataset.
+- [ ] Replace first piecewise curves with robust continuous models once Spa v2
+  data is available.
+- [ ] Model uncertainty so recommendations can distinguish high-confidence
+  zones from extrapolated or weakly supported zones.
+- [ ] Learn reusable zone priors from Spa, such as relationships between
+  approach speed, braking severity, straight length, corner type, LICO distance,
+  fuel saved, and local time lost.
+- [ ] Add automatic candidate-zone proposal for new circuits from mostly push
+  laps, using braking events, approach geometry/proxies, and reusable priors.
+- [ ] Test the pipeline on another circuit with a small calibration budget:
+  mostly push laps plus a limited number of varied LICO laps, not a full manual
+  50-lap rebuild.
+- [ ] Keep a manual review fallback for zones whose telemetry shape is outside
+  the Spa-learned distribution.
+- [ ] Add lightweight statistical models only after transparent heuristic
+  outputs are credible.
 - [ ] Prefer continuous models such as splines, Gaussian processes, or hierarchical
   Bayesian models over classification of LICO intensity labels.
 
@@ -152,5 +183,11 @@ The current local dataset is enough to start implementation:
 - `high`: high LICO sample;
 - `pitstop`: pit/refill sample.
 
-Do not collect more broad global LICO runs until Phase 1 and Phase 2 produce
-reproducible tables. Future data should be targeted by zone.
+The first reproducible Spa pipeline now exists. Future Spa data should move away
+from broad `none`/`low`/`medium`/`high` labels and toward:
+
+- controlled-random LICO runs that vary lift distances across zones to fill the
+  continuous curve;
+- targeted zone runs that break correlations between zones;
+- recommendation-execution runs once an audio cue can tell the driver where to
+  lift and log whether the plan was followed.

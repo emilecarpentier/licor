@@ -1,0 +1,172 @@
+{
+  "protocol_id": "spa_lmp2_v2_collection_protocol",
+  "protocol_version": 1,
+  "status": "draft",
+  "track": "Circuit de Spa-Francorchamps",
+  "car_class": "LMP2_ELMS",
+  "car": "Oreca 07 ELMS Custom Team 2025 #397",
+  "session_type": "Practice",
+  "source_dataset_id": "spa_lmp2_2026-05-14",
+  "objectives": [
+    "Fill continuous LICO fuel/time curves with less correlated observations than the first global low/medium/high runs.",
+    "Collect targeted zone evidence for the highest-value Spa candidates without manually hardcoding final optimizer decisions.",
+    "Prepare planned-versus-executed validation once a replay or live cue runner exists."
+  ],
+  "required_run_metadata": [
+    "collection_protocol_id",
+    "collection_design",
+    "target_zones",
+    "planned_lico_profile_id",
+    "planned_lico_profile_description",
+    "execution_quality",
+    "labels_quality",
+    "driver_notes"
+  ],
+  "collection_designs": [
+    {
+      "collection_design": "baseline",
+      "purpose": "Refresh the no-LICO push baseline and check fuel/lap and time/lap stability.",
+      "suggested_runs": 1,
+      "suggested_valid_laps": "5+",
+      "target_zones": [],
+      "constraints": [
+        "No intentional LICO.",
+        "Use clean push laps only; exclude missed brake points or traffic-like disruptions."
+      ],
+      "primary_quality_checks": [
+        "fuel_per_lap_l close to the current none baseline",
+        "lap_time_s close to the current none baseline",
+        "stable brake_reference_m by zone"
+      ]
+    },
+    {
+      "collection_design": "controlled_random",
+      "purpose": "Vary LICO naturally across many zones to increase curve coverage while avoiding fixed global intensity labels.",
+      "suggested_runs": 3,
+      "suggested_valid_laps": "6-10 per run",
+      "target_zones": [
+        "spa_t01",
+        "spa_t05_t06",
+        "spa_t08",
+        "spa_t10_t11",
+        "spa_t12_t13",
+        "spa_t18"
+      ],
+      "constraints": [
+        "Vary lift distance from lap to lap and zone to zone.",
+        "Do not intentionally force every candidate zone high on the same lap.",
+        "Keep the lift shape as a rapid 100% to 0% throttle release when LICO is attempted.",
+        "Record post-run notes for laps where one zone was clearly mis-executed."
+      ],
+      "primary_quality_checks": [
+        "coverage across short, medium, and long LICO distances",
+        "limited same-lap correlation between all target zones",
+        "no repeated impossible throttle artifacts driving LICO start detection"
+      ]
+    },
+    {
+      "collection_design": "targeted_zone",
+      "purpose": "Isolate causal evidence for zones that are strategically important or currently diagnostic-only.",
+      "suggested_runs": 4,
+      "suggested_valid_laps": "4-6 per target group",
+      "target_groups": [
+        ["spa_t05_t06"],
+        ["spa_t08"],
+        ["spa_t12_t13"],
+        ["spa_t18"],
+        ["spa_t01"]
+      ],
+      "constraints": [
+        "Emphasize only the target group while keeping other zones close to normal push behavior or a documented light pattern.",
+        "Use several lift distances for the target group rather than one repeated distance.",
+        "Mark laps with missed brake points or abnormal exits as partial/poor execution instead of deleting the run."
+      ],
+      "primary_quality_checks": [
+        "target zone distance coverage",
+        "local fuel/time deltas consistent with full-lap sanity checks",
+        "exit speed and minimum speed not dominated by unrelated driver mistakes"
+      ]
+    },
+    {
+      "collection_design": "pitstop_validation",
+      "purpose": "Validate pit-lane commitment time and refill rate against the first Spa pit stop observation.",
+      "suggested_runs": 1,
+      "suggested_valid_laps": "1-2 observed stops",
+      "target_zones": [],
+      "constraints": [
+        "No tire change unless explicitly noted.",
+        "Log starting fuel, requested fuel, and whether the stop was full refill or partial refill."
+      ],
+      "primary_quality_checks": [
+        "fuel_added_l",
+        "observed_refill_rate_lps",
+        "speed_limiter_duration_s",
+        "stationary_duration_s"
+      ]
+    },
+    {
+      "collection_design": "recommendation_execution",
+      "purpose": "Execute an exported LICOR plan once a replay cue or live cue runner exists.",
+      "suggested_runs": 2,
+      "suggested_valid_laps": "5+",
+      "target_zones": "from_exported_plan",
+      "constraints": [
+        "Use a versioned plan_id and keep the exported plan unchanged during the run.",
+        "Log cue trigger, actual lift start, actual brake start, and execution quality per zone.",
+        "Treat this as validation of planned-versus-executed behavior, not as the first source of curve calibration."
+      ],
+      "primary_quality_checks": [
+        "cue_error_m",
+        "actual_lift_distance_before_brake_m",
+        "fuel_saved_vs_baseline_l",
+        "time_lost_vs_baseline_s",
+        "execution_quality"
+      ]
+    }
+  ],
+  "execution_quality_labels": [
+    {
+      "label": "clean",
+      "meaning": "The intended LICO action and braking/exiting phase were executed normally."
+    },
+    {
+      "label": "partial",
+      "meaning": "The lap or zone is usable for context, but one part of the intended LICO action was not clean."
+    },
+    {
+      "label": "poor",
+      "meaning": "A driver mistake, missed brake point, abnormal exit, or telemetry artifact likely contaminates the zone."
+    },
+    {
+      "label": "unknown",
+      "meaning": "No driver review is available yet."
+    }
+  ],
+  "priority_zones": [
+    {
+      "zone_id": "spa_t05_t06",
+      "reason": "High-value classic LICO zone; current curve needs more support around marginal efficiency."
+    },
+    {
+      "zone_id": "spa_t08",
+      "reason": "Driver-approved candidate with improved calibration, but still needs more independent evidence."
+    },
+    {
+      "zone_id": "spa_t12_t13",
+      "reason": "Driver-approved candidate with promising fuel signal and less clear time signal."
+    },
+    {
+      "zone_id": "spa_t18",
+      "reason": "Very clean current signal and important reference for high-confidence LICO behavior."
+    },
+    {
+      "zone_id": "spa_t01",
+      "reason": "Feasible driver-approved candidate; useful for confirming early-race and heavy-fuel behavior."
+    }
+  ],
+  "notes": [
+    "The protocol intentionally moves away from broad low/medium/high labels as the primary source of truth.",
+    "Controlled-random data should improve curve coverage, while targeted-zone data should reduce attribution errors caused by same-lap zone correlation.",
+    "Recommendation-execution data depends on a future plan export and replay/live cue runner."
+  ]
+}

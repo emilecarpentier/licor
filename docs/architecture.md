@@ -1,8 +1,10 @@
 # Architecture
 
-LICOR is organized as an offline telemetry pipeline first. Live telemetry,
-overlays, and audio cues are future layers that should consume the same core
-analysis functions after they are validated offline.
+LICOR is organized as an offline telemetry pipeline first. The next product
+shape is a learning loop: offline analysis builds a candidate plan, reports
+explain the decision, a minimal live cue helps the driver execute that plan, and
+the logged execution feeds the next model update. Full overlays and polished
+apps should consume the same core analysis functions after this loop works.
 
 ## Data Flow
 
@@ -22,6 +24,10 @@ analysis functions after they are validated offline.
 11. Compare push and LICO behavior inside each zone.
 12. Rank zone-level recommendations by fuel saved versus local time lost.
 13. Feed zone-level fuel/time curves into race strategy and pit stop analysis.
+14. Export an executable LICO plan for live cues.
+15. Compare planned versus executed lift points after live-cue validation runs.
+16. Use new observations to update continuous zone models and cross-circuit
+    priors.
 
 ## Modules
 
@@ -30,8 +36,10 @@ analysis functions after they are validated offline.
 - analysis: compute fuel, lap, braking, and LICO metrics.
 - optimization: choose best lift zones for a fuel target.
 - reports: generate summaries, plots, and tables.
-- app: Streamlit dashboard after the core pipeline works.
-- live: future live telemetry support.
+- app: Streamlit dashboard after reports and live-cue validation are useful.
+- live: minimal telemetry/audio-cue support for executing exported LICO plans.
+- modeling: robust continuous models and reusable priors for cross-circuit
+  generalization.
 
 ## Strategy Layer
 
@@ -46,6 +54,44 @@ one stop possible.
 Pit stop telemetry should be analyzed separately from LICO calibration telemetry.
 It can estimate pit lane commitment time, stationary time, refill duration, fuel
 added, and observed refill rate.
+
+## Data Collection And Validation Loop
+
+Initial `none`, `low`, `medium`, and `high` labels were useful to establish the
+first relationship between LICO distance, fuel saved, and local time lost. Now
+that LICOR can place first curves, new Spa data should be richer:
+
+- controlled-random LICO runs to cover many lift distances across zones;
+- targeted zone runs to break correlation between zones and isolate causal
+  effects;
+- live-cue recommendation runs to test whether an exported plan can be executed
+  and whether the predicted fuel/time outcome appears in telemetry.
+
+Visual reports are debugging tools, not final proof that a specific lift
+distance is optimal. Empirical validation should eventually come from executing
+model-generated cues, logging the actual lift points, and comparing planned
+versus executed fuel/time outcomes.
+
+## Cross-Circuit Generalization
+
+Spa should be the first calibration and methodology dataset, not a one-off
+hardcoded solution. For future circuits, LICOR should reduce manual work by
+transferring learned structure:
+
+- automatically propose candidate zones from braking events and approach
+  telemetry;
+- estimate initial LICO feasibility and curve shapes from features such as
+  approach speed, braking severity, straight length before braking, corner
+  complexity, and exit acceleration opportunity;
+- use learned Spa priors as starting points, then update them with a small
+  circuit-specific calibration sample;
+- flag out-of-distribution zones for manual review instead of pretending the
+  transfer model is certain.
+
+The expected workflow for a new circuit should be mostly push laps plus a small
+set of varied LICO laps, not a full manual rebuild of every zone. If a circuit
+has unusual geometry or weak telemetry signals, manual review remains the
+fallback.
 
 ## LMU DuckDB Ingestion
 
@@ -82,6 +128,10 @@ validating this reference lives in `src/licor/ingestion/lmu_config.py`.
   braking, corner/complex, and exit stabilization point.
 - Race strategy is the reason to optimize LICO. Zone-level recommendations must
   eventually be evaluated against pit stop costs and race length.
+- Live audio cues are the practical way to validate exact recommended lift
+  distances in driving; visual reports are for diagnosing model behavior.
+- Cross-circuit models should transfer learned structure from Spa, but never
+  silently recommend high-confidence plans for out-of-distribution zones.
 - Raw telemetry files stay outside Git.
 - Continuous channel alignment should happen in preprocessing, not ingestion.
 - Driver intent labels should be stored separately from raw telemetry.

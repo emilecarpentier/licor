@@ -112,13 +112,47 @@ fields:
 - `session_type`
 - `run_type`: `push`, `global_lico`, `targeted_lico`, `race`, `practice`
 - `lico_intensity`: `none`, `light`, `medium`, `heavy`, `unknown`
+- `collection_protocol_id`
 - `target_zone`
+- `target_zones`
+- `target_zones_source`: optional sentinel such as `from_exported_plan` when
+  zones should be resolved from a referenced plan rather than listed manually
+- `collection_design`: `baseline`, `global_label`, `controlled_random`,
+  `targeted_zone`, `pitstop_validation`, `recommendation_execution`, `other`
+- `planned_lico_profile_id`
+- `planned_lico_profile_description`
+- `audio_cue_plan_id`
+- `execution_quality`
 - `labels_quality`: `high`, `medium`, `low`
 - `notes`
 
 `lico_intensity` is a collection label, not a final optimization class. The
 model should use it to understand the experiment design, then extract continuous
 LICO variables from telemetry.
+
+The first Spa labels `none`, `low`, `medium`, and `high` were useful for finding
+the first cost/benefit relationships. Future labels should describe experiment
+design more explicitly. Controlled-random runs help fill continuous curves,
+targeted-zone runs help isolate one zone's causal effect, and
+recommendation-execution runs validate whether a model-generated plan can be
+followed and whether its predicted fuel/time outcome appears in telemetry.
+
+The first planned Spa v2 protocol is versioned in
+`config/collection_protocols/spa_lmp2_v2_protocol.json`. It defines the intended
+collection designs, required run metadata, priority zones, and execution-quality
+labels for the next Spa data collection pass. Dataset sidecars should reference
+that protocol through `collection_protocol_id` instead of duplicating the full
+protocol in every run entry.
+
+Suggested `execution_quality` labels:
+
+- `clean`: the intended LICO action and braking/exiting phase were executed
+  normally;
+- `partial`: the lap or zone is usable for context, but one part of the
+  intended LICO action was not clean;
+- `poor`: a driver mistake, missed brake point, abnormal exit, or telemetry
+  artifact likely contaminates the zone;
+- `unknown`: no driver review is available yet.
 
 ## Zone-Level Analysis Tables
 
@@ -706,3 +740,211 @@ The prudent driver-prior plan reaches the `48`-lap one-stop target with roughly
 `optimization_time_lost_s` is currently equal to the model-predicted time loss.
 This should be treated as a candidate for visual review, not a final
 recommendation.
+
+`src/licor/reports/zone_plan_report.py` overlays selected optimizer points on
+the zone model fuel, time, and fuel-per-second curves. The current local Spa
+artifact is
+`data/processed/spa_lmp2_zone_lico_plan_driver_priors_prudent_report.html`.
+This report is meant for driver validation of selected LICO distances,
+especially diagnostic zones such as T01, T08, and T12-T13.
+
+`src/licor/analysis/zone_plan_diagnostics.py` adds optimizer-facing diagnostics
+that stay independent from report rendering. `build_zone_marginal_efficiency`
+turns a zone model curve into consecutive segments so the project can inspect
+incremental, not only cumulative, fuel/time efficiency. Key fields include:
+
+- `from_lico_distance_m` and `to_lico_distance_m`;
+- `incremental_fuel_saved_l`;
+- `incremental_time_lost_s`;
+- `marginal_fuel_saved_per_second_lps`;
+- `best_cumulative_ratio_distance_m`;
+- `is_after_best_cumulative_ratio_distance`;
+- `contains_selected_plan_point`;
+- `marginal_flags`.
+
+This table is meant to answer why an optimizer may choose a point beyond the
+best cumulative ratio. A later segment can be less efficient marginally but
+still be required to reach the race fuel target.
+
+The same module provides `summarize_zone_plan_sensitivity`, which reruns the
+zone optimizer across named scenarios and returns one row per scenario. Initial
+scenario support includes:
+
+- base optimizer settings;
+- capping each zone at its best cumulative ratio point;
+- excluding diagnostic-only zones;
+- adding a fuel safety margin to the target;
+- custom per-zone maximum LICO distances.
+
+Sensitivity outputs should be treated as decision diagnostics. They should not
+replace the optimizer objective; they explain how fragile or robust a plan is
+when the allowed model surface changes.
+
+## Live Cue Plan And Execution Tables
+
+Exact recommended lift distances are difficult for the driver to validate by
+visual inspection and difficult to execute from memory. LICOR should eventually
+export a simple live-cue plan that can be consumed by a telemetry runner.
+
+Suggested `live_cue_plan` fields:
+
+- `schema_version`
+- `plan_id`
+- `track_name`
+- `car_class`
+- `race_context_id`
+- `zone_id`
+- `display_label`
+- `brake_reference_m`
+- `selected_lico_distance_m`
+- `planned_lift_start_m`
+- `cue_distance_m`
+- `cue_tolerance_m`
+- `track_length_m`
+- `minimum_confidence_label`
+- `expected_fuel_saved_l`
+- `expected_time_lost_s`
+- `plan_status`
+- `source_model_status`
+- `source_quality_flags`
+- `strategy_role`
+- `notes`
+
+Suggested `live_cue_execution` fields:
+
+- `schema_version`
+- `plan_id`
+- `file_name`
+- `run_id`
+- `lap_number`
+- `zone_id`
+- `cue_trigger_m`
+- `planned_lift_start_m`
+- `actual_lift_start_m`
+- `actual_lift_distance_before_brake_m`
+- `actual_brake_start_m`
+- `cue_error_m`
+- `fuel_saved_vs_baseline_l`
+- `time_lost_vs_baseline_s`
+- `execution_quality`
+- `notes`
+
+Suggested `live_cue_event_log` fields:
+
+- `schema_version`
+- `plan_id`
+- `file_name`
+- `run_id`
+- `lap_number`
+- `zone_id`
+- `display_label`
+- `cue_trigger_m`
+- `planned_lift_start_m`
+- `actual_cue_distance_m`
+- `cue_error_m`
+- `cue_tolerance_m`
+- `trigger_status`: `fired_on_time`, `fired_late`, or `fired_early`
+- `sample_index`
+- `sample_ts`
+- `sample_elapsed_s`
+- `audio_cue_kind`
+- `notes`
+
+The live cue runner should not replace the offline optimizer. It should execute
+an exported plan, log what happened, and feed planned-versus-executed telemetry
+back into the offline model.
+
+Current implementation in `src/licor/analysis/live_plan.py` defines the first
+versioned export contract:
+
+- `build_live_cue_plan` consumes a zone-level optimizer plan and reviewed
+  `track_zone` definitions;
+- `planned_lift_start_m` is calculated as
+  `brake_reference_m - selected_lico_distance_m`;
+- when a `track_length_m` is provided, lift-start distance wraps around the lap
+  start using modulo track length;
+- `cue_distance_m` currently equals `planned_lift_start_m`, leaving room for
+  future latency compensation without changing the plan anchor;
+- only selected LICO zones are exported by default;
+- missing `brake_reference_m` for a selected zone is an error, because a live
+  cue plan cannot safely invent the driver reference point.
+
+`build_live_cue_executions_from_zone_passes` creates the first replay-style
+execution table by joining an exported plan to observed `zone_pass` rows. It
+records planned lift start, observed lift start, observed brake start, cue error
+in meters, local fuel/time deltas, and execution quality. When track length is
+available, cue error is a signed circular distance so start/finish wraparound
+does not create false multi-kilometer errors. Fuel/time deltas are read from
+baseline-delta columns when present and otherwise remain null for raw
+`zone_pass` rows that do not carry baseline comparisons. This is a replay schema
+foundation, not a real-time audio implementation yet.
+
+`src/licor/analysis/live_cue_runner.py` adds the first minimal cue runtime. It
+loads a versioned `live_cue_plan` CSV, validates the required runtime columns,
+and simulates cue triggering from ordered telemetry samples containing
+`lap_number`, `lap_distance_m`, and `ts`. The runner:
+
+- triggers on distance crossing, not exact equality;
+- suppresses duplicate triggers per lap and zone;
+- handles start/finish wrap when `track_length_m` is available;
+- logs both `cue_trigger_m` and `planned_lift_start_m` so future latency
+  compensation can move the trigger without losing the intended lift anchor;
+- summarizes cue timing accuracy by plan and zone.
+
+This is a deterministic software cue/logging prototype. The actual sound output
+adapter remains a separate integration step.
+
+`src/licor/live/` contains the first I/O wrapper around that deterministic
+runner:
+
+- `RecordingAudioCueAdapter` records cue payloads in memory for tests;
+- `NullAudioCueAdapter` disables sound while keeping the replay/logging path;
+- `SystemBeepAudioCueAdapter` is the minimal real-audio adapter and should stay
+  outside automated tests;
+- `run_replay_live_cue_session` loads a plan CSV and telemetry sample CSV,
+  emits one audio-adapter call per triggered cue, writes the primary
+  `live_cue_event_log`, and optionally writes the derived accuracy summary.
+
+The event log is the auditable source of truth. The accuracy log is derived and
+can be regenerated from events. Replay sessions write logs before calling the
+audio adapter, and existing log files are not overwritten unless
+`overwrite_existing_logs` is explicitly enabled.
+
+## Cross-Circuit Learning Tables
+
+To generalize beyond Spa without manually rebuilding every zone, LICOR should
+store reusable zone features and transfer-model outputs separately from
+driver-reviewed final configs.
+
+Suggested `zone_feature` fields:
+
+- `track_name`
+- `car_class`
+- `zone_id`
+- `turn_numbers`
+- `approach_speed_kph`
+- `brake_reference_m`
+- `brake_start_speed_kph`
+- `brake_severity`
+- `straight_length_before_brake_m`
+- `corner_complexity_label`
+- `exit_acceleration_distance_m`
+- `baseline_fuel_used_l`
+- `baseline_elapsed_time_s`
+- `feature_quality`
+
+Suggested `transfer_prior` fields:
+
+- `source_model_id`
+- `target_track_name`
+- `target_zone_id`
+- `predicted_lico_feasibility`
+- `predicted_curve_shape`
+- `uncertainty_label`
+- `requires_manual_review`
+- `notes`
+
+Machine learning or heavier statistical models should use these tables to
+propose starting points for new circuits. They should reduce the calibration
+budget, not silently replace circuit-specific push laps, varied LICO laps, or
+manual review for unusual zones.

@@ -193,3 +193,95 @@ reaches the 48-lap one-stop target with a small fuel surplus and distributes
 LICO across T01, T05-T06, T08, T10-T11, T12-T13, and T18 while leaving T14 at
 `0 m`. This should be reviewed visually before being promoted to a
 recommendation.
+
+The current visual validation artifact is
+`data/processed/spa_lmp2_zone_lico_plan_driver_priors_prudent_report.html`. It
+places the selected optimizer points directly on the zone fuel, time, and ratio
+curves so the driver can judge whether each chosen LICO distance is credible.
+
+## Recommendation Validation Direction
+
+The plan report is a diagnostic tool, not the final empirical validation method.
+The driver can identify impossible zones, contaminated curves, and weak signals,
+but should not be expected to confirm that an exact lift distance such as
+`70 m` is optimal by visual inspection.
+
+The next validation loop should be:
+
+1. Use offline models and strategy targets to export a LICO plan.
+2. Execute the plan with a minimal live audio cue that tells the driver when to
+   lift.
+3. Log the actual lift start, brake start, fuel use, local time, and full-lap
+   sanity metrics.
+4. Compare planned versus executed LICO and update the model.
+
+This means Streamlit remains a reporting and review tool. The practical driving
+validation layer is a small live telemetry/audio-cue runner that consumes a
+tested plan format and writes execution telemetry for later analysis.
+
+`src/licor/analysis/live_plan.py` now provides the first code-level contract for
+that bridge. It exports selected optimizer rows into a versioned `live_cue_plan`
+table and computes:
+
+```text
+planned_lift_start_m = brake_reference_m - selected_lico_distance_m
+```
+
+The exported `cue_distance_m` currently matches `planned_lift_start_m`. A later
+runner can apply audio latency or anticipation offsets while keeping the plan's
+driver reference point stable. The same module also defines a replay execution
+schema that joins an exported plan to observed `zone_pass` telemetry, producing
+planned-vs-executed rows before any live audio integration is attempted.
+
+`src/licor/analysis/live_cue_runner.py` adds the first deterministic trigger and
+logging layer for that plan. It replays telemetry samples through the same
+distance-crossing logic the future live runner should use, handles lap wrap, and
+produces cue timing accuracy logs. The actual audio adapter remains separate so
+the strategy and telemetry contracts can be tested before driving with sound.
+
+`src/licor/live/` now wraps that deterministic layer with file I/O and injectable
+audio adapters. Replay sessions can load a plan CSV plus telemetry sample CSV,
+write the primary cue event log, write a derived accuracy summary, and call a
+fake or real audio adapter per triggered cue. Automated tests use the recording
+adapter only; real sound remains an explicit driving-session validation step.
+Logs are written before audio is emitted, and existing logs require an explicit
+overwrite flag.
+
+## Data Collection Direction
+
+The initial Spa dataset used labeled global `none`, `low`, `medium`, and `high`
+LICO runs to establish the first relationships. Future data should shift toward
+more informative variation:
+
+- controlled-random LICO runs, where lift distances vary enough to fill the
+  continuous curves;
+- targeted zone runs, where only a small number of zones are emphasized so the
+  model can separate one zone's effect from another;
+- recommendation-execution runs, where the model exports a plan and live cues
+  help the driver follow it.
+
+More data is useful only if it improves identification. Pure global LICO laps
+can still be valuable, but if every zone is changed together the model may learn
+correlations rather than causal zone costs.
+
+## Cross-Circuit Strategy
+
+For future circuits, LICOR should not require a full Spa-style manual rebuild if
+the learned structure transfers well. The intended workflow is:
+
+- collect mostly push laps to identify braking zones, approach speeds, brake
+  severity, baseline fuel, and baseline lap time;
+- automatically propose candidate LICO zones and first boundaries from braking
+  and approach telemetry;
+- use Spa-learned priors to estimate initial feasibility and curve shapes based
+  on zone features;
+- collect a small number of varied LICO laps to update those priors for the new
+  circuit;
+- require manual review only for out-of-distribution zones, weak telemetry
+  signals, or zones whose recommendation would materially affect race strategy.
+
+Machine learning is useful here as a transfer layer: it can learn that zones
+with similar approach speed, braking demand, straight length, and corner
+complexity tend to have similar fuel/time behavior. It should reduce the number
+of laps and manual adjustments needed on a new circuit, not eliminate all
+calibration or driver review.

@@ -205,6 +205,11 @@ For generalization to future circuits, zone identifiers should be based on
 generally known turn numbers rather than local corner names. Corner names can be
 kept in notes for driver review, but they should not drive the analysis.
 
+Future circuits should not require a full Spa-style manual rebuild when the
+learned structure transfers. The expected first pass is automatic: detect
+braking zones from push laps, propose candidate LICO windows from approach and
+brake telemetry, then flag uncertain zones for driver review.
+
 LICO eligibility should be binary. The table can exclude structural
 non-candidates, such as a second chicane brake pressure that cannot reasonably be
 used for lift-and-coast. It should not encode intensity-specific judgments such
@@ -328,6 +333,13 @@ subject to total fuel saved >= target fuel saving
 This makes the project closer to zone-level cost-benefit optimization than
 full-lap imitation.
 
+Visual reports can diagnose whether the optimizer is using suspicious portions
+of a curve, but they are not the final proof of exact distance optimality. The
+driver should not be expected to verify a recommendation such as "lift 70 m
+before brake" by eye. Exact-distance validation should eventually come from a
+live audio cue, planned-versus-executed telemetry, and post-run comparison of
+fuel/time outcomes.
+
 ## Candidate Modeling Approaches
 
 The first MVP can use transparent interpolation or simple smooth curves by zone.
@@ -340,3 +352,20 @@ Later versions can use more formal continuous models:
 Black-box classification of `none`, `low`, `medium`, and `high` should be
 avoided. Those labels describe how the data was collected, not what the final
 optimizer should choose.
+
+For cross-circuit use, machine learning should act as a transfer and uncertainty
+layer. It can learn relationships between zone features and LICO response, such
+as:
+
+- approach speed;
+- brake severity;
+- straight length before braking;
+- corner-complex length;
+- exit acceleration opportunity;
+- observed full-push brake stability;
+- local fuel and time sensitivity to lift distance.
+
+The goal is to start a new circuit with useful priors and fewer laps, not to
+remove calibration entirely. A practical target is mostly push laps plus a small
+set of varied LICO laps, with manual review reserved for zones that look unusual
+or strategically important.

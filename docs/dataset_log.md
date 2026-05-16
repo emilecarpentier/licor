@@ -228,14 +228,47 @@ pipeline:
 - first continuous LICO fuel/time curves;
 - pit stop/refill analysis.
 
-Additional data should be collected only after the first pipeline can produce
-reproducible tables from these files.
+The first offline pipeline now produces reproducible tables, zone models, race
+strategy targets, and candidate Spa LICO plans. Additional Spa data should move
+from broad `low`/`medium`/`high` labels to a versioned collection protocol that
+improves curve coverage, reduces same-lap zone correlation, and prepares
+planned-versus-executed validation.
 
-## Suggested Future Data
+## Spa V2 Collection Protocol
 
-Collect later, after the first pipeline exists:
+A machine-readable draft protocol lives at
+`config/collection_protocols/spa_lmp2_v2_protocol.json`.
+
+The Spa v2 goal is not to manually validate exact optimizer distances by eye.
+The goal is to collect better evidence for the model and later validate
+exported plans with replay/live cue execution logs.
+
+Planned collection designs:
 
 - one or two additional pit stop files to validate refill behavior;
-- targeted LICO runs for Les Combes, Bus Stop, Pouhon, and Fagnes;
 - a second clean `none` baseline to validate push-run stability;
-- another circuit with mostly push laps to test generalization.
+- controlled-random Spa LICO runs that vary lift distance naturally across
+  zones and fill the continuous curves;
+- targeted Spa LICO runs for key zones such as T05-T06, T08, T12-T13, T18, and
+  T01, with only a small number of zones emphasized at a time;
+- live-cue execution runs now that LICOR can export a plan and simulate/log cue
+  triggers, with real audio output still to be wired;
+- another circuit with mostly push laps plus a small number of varied LICO laps
+  to test transfer from Spa without a full manual 50-lap rebuild.
+
+Future data should record the experiment design, not just the broad LICO level:
+
+- `collection_protocol_id`;
+- `collection_design`;
+- `target_zones`;
+- `planned_lico_profile_id`;
+- `planned_lico_profile_description`;
+- `execution_quality`;
+- `labels_quality`;
+- driver notes.
+
+Use global labels only when they are truly the collection intent; otherwise
+prefer labels such as `controlled_random`, `targeted_zone`, or
+`recommendation_execution`. Recommendation-execution data should include a
+stable `plan_id`, plus cue event logs that record scheduled trigger distance,
+actual trigger distance, and timing accuracy.

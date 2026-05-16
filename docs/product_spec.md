@@ -35,7 +35,7 @@ The MVP focuses on:
 - recorded telemetry files;
 - offline analysis after a driving session.
 
-## Out Of Scope For The MVP
+## Out Of Scope For The First Offline MVP
 
 The following features are intentionally excluded from the first version:
 
@@ -47,7 +47,10 @@ The following features are intentionally excluded from the first version:
 - multi-car comparison;
 - general support for every car and track combination.
 
-These may become future features after the offline analysis pipeline is reliable.
+These become future features after the offline analysis pipeline is reliable.
+The current project direction is to add them in stages: first decision-quality
+reports, then a minimal live audio cue for empirical validation, then broader
+apps and cross-circuit modeling.
 
 ## Inputs
 
@@ -80,6 +83,15 @@ The MVP should produce:
 - pit stop and refill observations, when pit stop data is provided;
 - race strategy estimates for whether fuel saving can avoid an extra stop;
 - simple plots for throttle, brake, speed, fuel, and lap distance.
+
+Later validation versions should also produce:
+
+- an executable LICO plan for live audio cues;
+- planned-versus-executed lift timing logs;
+- optimizer sensitivity reports showing marginal fuel/time efficiency and how
+  recommendations change under stricter caps or safety margins;
+- cross-circuit candidate-zone proposals that can be reviewed instead of built
+  fully by hand.
 
 ## Core Metrics
 
@@ -120,10 +132,18 @@ The MVP is successful when it can:
 7. estimate pit stop/refill cost from pit stop telemetry;
 8. produce a simple report that helps decide where to lift in a stint or race.
 
+The next success criterion after the offline MVP is:
+
+9. execute a model-generated plan with live audio cues and compare the resulting
+   telemetry against predicted fuel saving, local time loss, and execution
+   accuracy.
+
 ## Design Principles
 
 - Keep the first version offline and reproducible.
 - Prefer transparent heuristics before machine learning.
+- Use machine learning or heavier statistical models to reduce manual
+  calibration and transfer learning across circuits, not to hide assumptions.
 - Keep driver expertise central to the project.
 - Make assumptions explicit in documentation and configuration.
 - Prefer zone-level causal analysis over full-lap imitation.
@@ -133,3 +153,5 @@ The MVP is successful when it can:
   and pit stop cost.
 - Write small, testable analysis functions before building the app.
 - Treat plots and reports as decision-support tools, not as final truth.
+- Treat exact lift-distance validation as an empirical live-execution problem:
+  the driver should not be expected to validate a `70 m` recommendation by eye.
