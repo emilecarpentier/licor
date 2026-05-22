@@ -171,6 +171,32 @@ def test_strategy_prior_caps_lico_distance():
     assert selected["plan_status"] == "target_unreachable"
 
 
+def test_handles_large_candidate_spaces_without_bruteforce_failure():
+    rows = []
+    for zone_index in range(7):
+        zone_id = f"z{zone_index}"
+        rows.append(_model(zone_id, zone_id.upper(), 0.0, 0.0, 0.0, None))
+        for step in range(1, 9):
+            rows.append(
+                _model(
+                    zone_id,
+                    zone_id.upper(),
+                    float(step * 10),
+                    0.01 * step,
+                    0.01 * step,
+                    1.0,
+                )
+            )
+
+    plan = optimize_zone_lico_plan(
+        pl.DataFrame(rows),
+        config=ZoneOptimizerConfig(target_fuel_saved_per_lap_l=0.30),
+    )
+
+    assert set(plan["plan_status"].to_list()) == {"target_met"}
+    assert plan["total_predicted_fuel_saved_l"].to_list()[0] >= 0.30 - 1e-9
+
+
 def _model(
     zone_id: str,
     display_label: str,

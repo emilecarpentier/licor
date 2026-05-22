@@ -4,10 +4,11 @@ This file documents local telemetry datasets used during LICOR development.
 Raw `.duckdb` files stay outside Git. This log keeps the labels, valid laps, and
 driver notes needed to reproduce analyses.
 
-A machine-readable mirror of the current lap labels lives at
-`config/datasets/spa_lmp2_2026-05-14.json`. Keep this document as the human
-source of driver context, and update the JSON when lap labels used by the
-pipeline change.
+A machine-readable mirror of the current working lap labels lives at
+`config/datasets/spa_lmp2_v2_2026-05-21.json`. The older
+`config/datasets/spa_lmp2_2026-05-14.json` sidecar remains as the historical
+v1 snapshot. Keep this document as the human source of driver context, and
+update the JSON used by the pipeline when lap labels change.
 
 ## Label Meaning
 
@@ -256,13 +257,96 @@ Planned collection designs:
 - another circuit with mostly push laps plus a small number of varied LICO laps
   to test transfer from Spa without a full manual 50-lap rebuild.
 
+### Spa V2 Integrated Files
+
+The current v2 sidecar now includes two new baseline refresh runs and four
+`controlled_random` runs in addition to the original v1 `none` / `low` /
+`medium` / `high` / `pitstop` files.
+
+#### Baseline Refresh 01
+
+- File: `data/Circuit de Spa-Francorchamps_P_2026-05-21T22_10_36Z_baseline_push_01.duckdb`
+- Run id: `spa_lmp2_2026-05-21T22_10_36Z_baseline_push_01`
+- Collection design: `baseline`
+- Collection label: `none`
+- Valid laps: `5, 6, 7, 8, 9, 10`
+- Excluded laps: `4`
+- Notes: clean push-baseline refresh.
+
+#### Baseline Refresh 02
+
+- File: `data/Circuit de Spa-Francorchamps_P_2026-05-21T22_31_31Z_baseline_push_02.duckdb`
+- Run id: `spa_lmp2_2026-05-21T22_31_31Z_baseline_push_02`
+- Collection design: `baseline`
+- Collection label: `none`
+- Valid laps: `13, 15, 16, 17, 18, 19`
+- Excluded laps: `12, 14`
+- Zone-only exclusion: lap `15` / `T08`
+- Notes: lap 14 is removed after the off-track error; lap 15 stays usable
+  except for T08.
+
+#### Controlled Random 01
+
+- File: `data/Circuit de Spa-Francorchamps_P_2026-05-21T22_57_26Z_controlled_random_01.duckdb`
+- Run id: `spa_lmp2_2026-05-21T22_57_26Z_controlled_random_01`
+- Collection design: `controlled_random`
+- Valid laps: `22, 23, 24, 25, 26`
+- Excluded laps: `21`
+- Notes: includes the intentional `T12-T13` boundary probe on lap 26.
+
+#### Controlled Random 02
+
+- File: `data/Circuit de Spa-Francorchamps_P_2026-05-22T00_16_10Z_controlled_random_02.duckdb`
+- Run id: `spa_lmp2_2026-05-22T00_16_10Z_controlled_random_02`
+- Collection design: `controlled_random`
+- Valid laps: `29, 30, 31, 34, 35, 36`
+- Borderline laps: `32, 33`
+- Excluded laps: `28`
+- Zone-only exclusions: lap `32` / `T14`, lap `32` / `T18`, lap `33` / `T01`
+- Notes: driver-reported accident lap maps to LMU lap 32; unaffected earlier
+  zones stay usable.
+
+#### Controlled Random 03
+
+- File: `data/Circuit de Spa-Francorchamps_P_2026-05-22T00_41_25Z_controlled_random_03.duckdb`
+- Run id: `spa_lmp2_2026-05-22T00_41_25Z_controlled_random_03`
+- Collection design: `controlled_random`
+- Valid laps: `39, 40, 41, 42, 43, 44, 45`
+- Excluded laps: `38`
+- Notes: clean run with no impact-based exclusions.
+
+#### Controlled Random 04
+
+- File: `data/Circuit de Spa-Francorchamps_P_2026-05-22T01_05_54Z_controlled_random_04.duckdb`
+- Run id: `spa_lmp2_2026-05-22T01_05_54Z_controlled_random_04`
+- Collection design: `controlled_random`
+- Valid laps: `48, 49, 50, 51, 52, 53`
+- Excluded laps: `47`
+- Notes: a light wall touch before Eau Rouge on lap 50 was reviewed and kept as
+  non-contaminating.
+
+Current interpretation after four Spa v2 `controlled_random` runs:
+
+- controlled-random coverage is now strong enough to refit Spa zone curves
+  before scheduling targeted-zone collection;
+- targeted-zone runs are no longer the default next step and should be used
+  only if post-refit diagnostics still show weak bins, unstable optimizer
+  choices, or zone-boundary uncertainty;
+- recommendation-execution runs now matter more than additional random
+  collection if the refit produces a credible plan that can be replayed or
+  executed with live cues.
+
 Future data should record the experiment design, not just the broad LICO level:
 
 - `collection_protocol_id`;
+- `collection_session_id` when a run maps to a specific planned protocol
+  session;
 - `collection_design`;
 - `target_zones`;
+- `target_zones_source` when targets come from an exported plan;
 - `planned_lico_profile_id`;
 - `planned_lico_profile_description`;
+- `audio_cue_plan_id` for recommendation-execution runs;
 - `execution_quality`;
 - `labels_quality`;
 - driver notes.
@@ -272,3 +356,42 @@ prefer labels such as `controlled_random`, `targeted_zone`, or
 `recommendation_execution`. Recommendation-execution data should include a
 stable `plan_id`, plus cue event logs that record scheduled trigger distance,
 actual trigger distance, and timing accuracy.
+
+Before refitting curves from Spa v2, run the data-readiness summaries. They
+should report, by zone and by protocol session, whether there are enough clean
+baseline passes, detected LICO passes, and LICO-distance bins. Missing
+`collection_design` metadata should be treated as unlinked context for new Spa
+v2 designs, not silently inferred from old global labels.
+
+The ingestion sidecar contract is now wired into analysis code. Future Spa v2
+dataset JSON files can include the fields above, and LICOR will propagate them
+from `RunLapLabels` into lap summaries and `zone_pass` rows. Before processing
+new telemetry, run `validate_dataset_collection_metadata` against
+`config/collection_protocols/spa_lmp2_v2_protocol.json` to catch missing
+protocol ids, unknown target zones, missing LICO profile ids, or missing
+`audio_cue_plan_id` values for recommendation-execution runs.
+
+The current mixed Spa v1 plus Spa v2 runs can now be persisted as zone-pass
+artifacts:
+
+- `data/processed/spa_lmp2_zone_passes.csv`;
+- `data/processed/spa_lmp2_zone_passes.parquet`;
+- `data/processed/spa_lmp2_v2_zone_data_readiness.csv`;
+- `data/processed/spa_lmp2_v2_protocol_readiness.csv`.
+- `data/processed/spa_lmp2_v2_lap_quality_manifest.csv`;
+- `data/processed/spa_lmp2_lap_telemetry_report.html`.
+
+Because the current runs predate the Spa v2 protocol, protocol readiness should
+show the new controlled-random, targeted-zone, and recommendation-execution
+sessions as unlinked until new metadata-rich runs are collected.
+
+The lap telemetry report is a self-contained Plotly HTML review tool for speed,
+throttle, brake, fuel level, and lap distance across labelled valid/borderline
+laps. It is meant to help inspect future data collection quality before any
+Streamlit dashboard work.
+
+The lap quality manifest is an audit table for future collection triage. It
+keeps quality flags and recommended uses separate from zone model conclusions:
+a lap can be useful for reports, lap summaries, zone readiness, curve-update
+candidates, baseline references, or plan-execution review depending on its
+metadata, sample continuity, lap-summary status, and zone-pass health.

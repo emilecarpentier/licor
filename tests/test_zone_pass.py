@@ -2,6 +2,7 @@ import polars as pl
 import pytest
 
 from licor.analysis import (
+    RunLapLabels,
     TrackZoneDefinition,
     TrackZoneTable,
     ZonePassConfig,
@@ -151,6 +152,45 @@ def test_ignores_isolated_throttle_artifact_before_true_lico():
     assert row["has_lico"] is True
     assert row["lico_start_m"] == pytest.approx(220.0)
     assert row["lico_start_distance_before_brake_m"] == pytest.approx(30.0)
+
+
+def test_propagates_v2_collection_metadata_to_zone_passes():
+    labels = RunLapLabels.from_dict(
+        {
+            "run_id": "targeted_01",
+            "file": "data/targeted_01.duckdb",
+            "track": "Synthetic Spa",
+            "car_class": "LMP2_TEST",
+            "car": "Synthetic LMP2",
+            "session_type": "Practice",
+            "run_type": "targeted_lico",
+            "collection_label": "targeted_zone",
+            "labels_quality": "medium",
+            "valid_laps": [1],
+            "collection_protocol_id": "spa_lmp2_v2_collection_protocol",
+            "collection_session_id": "targeted",
+            "collection_design": "targeted_zone",
+            "target_zones": ["synthetic_t01"],
+            "planned_lico_profile_id": "t01_variation",
+            "execution_quality": "clean",
+            "driver_notes": "Synthetic targeted run.",
+        }
+    )
+
+    passes = extract_zone_passes(
+        _synthetic_lap_samples(lap_number=1, has_lico=True),
+        _zone_table(),
+        run_labels=labels,
+    )
+
+    row = passes.row(0, named=True)
+    assert row["collection_protocol_id"] == "spa_lmp2_v2_collection_protocol"
+    assert row["collection_session_id"] == "targeted"
+    assert row["collection_design"] == "targeted_zone"
+    assert row["target_zones"] == ["synthetic_t01"]
+    assert row["planned_lico_profile_id"] == "t01_variation"
+    assert row["execution_quality"] == "clean"
+    assert row["driver_notes"] == "Synthetic targeted run."
 
 
 def _zone_table() -> TrackZoneTable:

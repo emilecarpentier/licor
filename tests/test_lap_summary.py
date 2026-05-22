@@ -89,6 +89,60 @@ def test_loads_multiple_labeled_duckdb_files(tmp_path):
     ]
 
 
+def test_loads_mixed_legacy_and_v2_run_metadata_without_list_schema_errors(tmp_path):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    _create_synthetic_lmu_duckdb(data_dir / "legacy.duckdb", lap_offset=30)
+    _create_synthetic_lmu_duckdb(data_dir / "random.duckdb", lap_offset=40)
+    label_file = tmp_path / "labels.json"
+    label_file.write_text(
+        json.dumps(
+            {
+                "dataset_id": "synthetic_mixed",
+                "runs": [
+                    _run_label_dict(
+                        run_id="legacy",
+                        file_name="data/legacy.duckdb",
+                        valid_laps=[31],
+                        excluded_laps=[32],
+                    ),
+                    {
+                        **_run_label_dict(
+                            run_id="random",
+                            file_name="data/random.duckdb",
+                            valid_laps=[41],
+                            excluded_laps=[42],
+                        ),
+                        "collection_label": "controlled_random",
+                        "collection_protocol_id": "spa_lmp2_v2_collection_protocol",
+                        "collection_session_id": "controlled_random",
+                        "collection_design": "controlled_random",
+                        "target_zones": ["spa_t05_t06"],
+                        "planned_lico_profile_id": "synthetic_random_profile",
+                        "planned_lico_profile_description": "Synthetic profile.",
+                        "execution_quality": "clean",
+                        "driver_notes": "Synthetic v2 run.",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    summary = summarize_labeled_dataset(
+        label_file,
+        project_root=tmp_path,
+        config=LapSummaryConfig(min_lap_distance_m=800.0, max_lap_distance_m=1000.0),
+    )
+
+    legacy = summary.filter(summary["run_id"] == "legacy").row(0, named=True)
+    random = summary.filter(summary["run_id"] == "random").row(0, named=True)
+    assert legacy["target_zones"] == []
+    assert legacy["collection_design"] == ""
+    assert random["target_zones"] == ["spa_t05_t06"]
+    assert random["collection_design"] == "controlled_random"
+
+
 def _create_synthetic_lmu_duckdb(path: Path, *, lap_offset: int) -> None:
     con = duckdb.connect(str(path))
     con.execute("create table metadata(key varchar primary key, value varchar)")

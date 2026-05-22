@@ -32,6 +32,15 @@ def test_loads_driver_zone_review_and_builds_frames(tmp_path):
                         "notes": "Keep other lap 24 zones.",
                     }
                 ],
+                "zone_pass_annotations": [
+                    {
+                        "run_id": "synthetic",
+                        "lap_number": 26,
+                        "zone_id": "synthetic_t12_t13",
+                        "review_tags": ["intentional_boundary_probe"],
+                        "notes": "Keep and review zone boundary later.",
+                    }
+                ],
             }
         ),
         encoding="utf-8",
@@ -45,6 +54,14 @@ def test_loads_driver_zone_review_and_builds_frames(tmp_path):
     ]
     assert review.annotation_frame().select("zone_id", "signal_tags").rows() == [
         ("synthetic_t01", ["clean_signal"])
+    ]
+    assert review.pass_annotation_frame().select(
+        "run_id",
+        "lap_number",
+        "zone_id",
+        "review_tags",
+    ).rows() == [
+        ("synthetic", 26, "synthetic_t12_t13", ["intentional_boundary_probe"])
     ]
 
 
@@ -100,10 +117,131 @@ def test_applies_lap_zone_exclusions_without_removing_other_zones(tmp_path):
     assert t09["driver_review_zone_notes"] == "No useful signal."
 
 
-def _zone_pass(lap_number: int, zone_id: str, display_label: str) -> dict[str, object]:
+def test_applies_run_specific_lap_zone_exclusions_only_to_matching_run(tmp_path):
+    review_path = tmp_path / "review.json"
+    review_path.write_text(
+        json.dumps(
+            {
+                "dataset_id": "synthetic",
+                "track_name": "Synthetic Spa",
+                "car_class": "LMP2_TEST",
+                "zone_pass_exclusions": [
+                    {
+                        "run_id": "run_b",
+                        "lap_number": 32,
+                        "zone_id": "synthetic_t14",
+                        "reason": "driver_accident_contaminated_zone",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    zone_passes = pl.DataFrame(
+        [
+            _zone_pass(32, "synthetic_t14", "T14", run_id="run_a"),
+            _zone_pass(32, "synthetic_t14", "T14", run_id="run_b"),
+            _zone_pass(32, "synthetic_t18", "T18", run_id="run_b"),
+        ]
+    )
+
+    reviewed = apply_zone_pass_review(zone_passes, load_driver_zone_review(review_path))
+
+    assert reviewed.select("run_id", "lap_number", "zone_id", "validity_label").rows() == [
+        ("run_a", 32, "synthetic_t14", "valid"),
+        ("run_b", 32, "synthetic_t14", "driver_excluded"),
+        ("run_b", 32, "synthetic_t18", "valid"),
+    ]
+
+
+def test_applies_lap_zone_annotations_without_excluding_observation(tmp_path):
+    review_path = tmp_path / "review.json"
+    review_path.write_text(
+        json.dumps(
+            {
+                "dataset_id": "synthetic",
+                "track_name": "Synthetic Spa",
+                "car_class": "LMP2_TEST",
+                "zone_pass_annotations": [
+                    {
+                        "run_id": "synthetic",
+                        "lap_number": 26,
+                        "zone_id": "synthetic_t12_t13",
+                        "review_tags": [
+                            "intentional_boundary_probe",
+                            "candidate_lico_window_extension",
+                        ],
+                        "notes": "Intentional long LICO started before current zone window.",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    zone_passes = pl.DataFrame(
+        [
+            _zone_pass(26, "synthetic_t12_t13", "T12-T13"),
+            _zone_pass(26, "synthetic_t18", "T18"),
+        ]
+    )
+
+    reviewed = apply_zone_pass_review(zone_passes, load_driver_zone_review(review_path))
+
+    annotated = reviewed.filter(pl.col("zone_id") == "synthetic_t12_t13").row(
+        0,
+        named=True,
+    )
+    assert annotated["validity_label"] == "valid"
+    assert annotated["driver_review_pass_tags"] == [
+        "intentional_boundary_probe",
+        "candidate_lico_window_extension",
+    ]
+    assert annotated["driver_review_pass_notes"] == (
+        "Intentional long LICO started before current zone window."
+    )
+
+    other = reviewed.filter(pl.col("zone_id") == "synthetic_t18").row(0, named=True)
+    assert other["driver_review_pass_tags"] == []
+    assert other["driver_review_pass_notes"] == ""
+
+
+def test_loads_spa_v2_driver_review_annotations():
+    review = load_driver_zone_review(
+        "config/driver_reviews/spa_lmp2_v2_zone_review_2026-05-21.json"
+    )
+
+    row = review.pass_annotation_frame().row(0, named=True)
+    assert row["run_id"] == "spa_lmp2_2026-05-21T22_57_26Z_controlled_random_01"
+    assert row["lap_number"] == 26
+    assert row["zone_id"] == "spa_t12_t13"
+    assert "intentional_boundary_probe" in row["review_tags"]
+
+
+def test_loads_spa_v2_baseline_zone_only_exclusion():
+    review = load_driver_zone_review(
+        "config/driver_reviews/spa_lmp2_v2_zone_review_2026-05-21.json"
+    )
+
+    row = (
+        review.exclusion_frame()
+        .filter(pl.col("run_id") == "spa_lmp2_2026-05-21T22_31_31Z_baseline_push_02")
+        .row(0, named=True)
+    )
+    assert row["lap_number"] == 15
+    assert row["zone_id"] == "spa_t08"
+    assert row["reason"] == "driver_error_zone_only"
+
+
+def _zone_pass(
+    lap_number: int,
+    zone_id: str,
+    display_label: str,
+    *,
+    run_id: str = "synthetic",
+) -> dict[str, object]:
     return {
         "file_name": "synthetic.duckdb",
-        "run_id": "synthetic",
+        "run_id": run_id,
         "lap_number": lap_number,
         "zone_id": zone_id,
         "turn_numbers": [1],

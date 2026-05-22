@@ -13,6 +13,7 @@ class ZoneCurveConfig:
     bin_size_m: float = 25.0
     min_bin_pass_count: int = 1
     min_positive_delta: float = 1e-6
+    exclude_detected_lico_from_baseline: bool = True
 
 
 def build_zone_curve_points(
@@ -27,6 +28,11 @@ def build_zone_curve_points(
         return _empty_zone_curve_points_frame()
 
     comparable = zone_passes.filter(pl.col("validity_label").is_in(curve_config.valid_labels))
+    if curve_config.exclude_detected_lico_from_baseline:
+        comparable = _exclude_contaminated_baseline_passes(
+            comparable,
+            baseline_intensity=curve_config.baseline_intensity,
+        )
     if comparable.is_empty():
         return _empty_zone_curve_points_frame()
 
@@ -159,6 +165,22 @@ def _empty_zone_curve_points_frame() -> pl.DataFrame:
 
 def _empty_zone_curve_bins_frame() -> pl.DataFrame:
     return pl.DataFrame(schema=_ZONE_CURVE_BIN_SCHEMA)
+
+
+def _exclude_contaminated_baseline_passes(
+    zone_passes: pl.DataFrame,
+    *,
+    baseline_intensity: str,
+) -> pl.DataFrame:
+    baseline_condition = pl.col("lico_intensity") == baseline_intensity
+    if "collection_design" in zone_passes.columns:
+        baseline_condition = baseline_condition | (pl.col("collection_design") == "baseline")
+    return zone_passes.filter(
+        ~(
+            baseline_condition
+            & pl.col("has_lico").fill_null(False)
+        )
+    )
 
 
 _ZONE_CURVE_POINT_COLUMNS = [

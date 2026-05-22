@@ -10,6 +10,7 @@ class ZoneSummaryConfig:
     baseline_intensity: str = "none"
     valid_labels: tuple[str, ...] = ("valid",)
     min_positive_delta: float = 1e-6
+    exclude_detected_lico_from_baseline: bool = True
 
 
 def summarize_zone_costs(
@@ -24,6 +25,11 @@ def summarize_zone_costs(
         return _empty_zone_summary_frame()
 
     comparable = zone_passes.filter(pl.col("validity_label").is_in(summary_config.valid_labels))
+    if summary_config.exclude_detected_lico_from_baseline:
+        comparable = _exclude_contaminated_baseline_passes(
+            comparable,
+            baseline_intensity=summary_config.baseline_intensity,
+        )
     if comparable.is_empty():
         return _empty_zone_summary_frame()
 
@@ -117,6 +123,22 @@ def rank_zone_cost_benefit(zone_summary: pl.DataFrame) -> pl.DataFrame:
 
 def _empty_zone_summary_frame() -> pl.DataFrame:
     return pl.DataFrame(schema=_ZONE_SUMMARY_SCHEMA)
+
+
+def _exclude_contaminated_baseline_passes(
+    zone_passes: pl.DataFrame,
+    *,
+    baseline_intensity: str,
+) -> pl.DataFrame:
+    baseline_condition = pl.col("lico_intensity") == baseline_intensity
+    if "collection_design" in zone_passes.columns:
+        baseline_condition = baseline_condition | (pl.col("collection_design") == "baseline")
+    return zone_passes.filter(
+        ~(
+            baseline_condition
+            & pl.col("has_lico").fill_null(False)
+        )
+    )
 
 
 _ZONE_SUMMARY_COLUMNS = [

@@ -114,6 +114,24 @@ def test_ranks_positive_fuel_saved_per_second_lost():
     ]
 
 
+def test_excludes_detected_lico_from_baseline_summary_by_default():
+    zone_passes = pl.DataFrame(
+        [
+            _zone_pass("spa_t18", "T18", "none", 0.40, 5.0, False, None, None),
+            _zone_pass("spa_t18", "T18", "none", 0.38, 5.1, True, 18.0, 0.2),
+            _zone_pass("spa_t18", "T18", "low", 0.35, 5.3, True, 80.0, 1.0),
+        ]
+    )
+
+    summary = summarize_zone_costs(zone_passes)
+
+    baseline = summary.filter(pl.col("lico_intensity") == "none").row(0, named=True)
+    low = summary.filter(pl.col("lico_intensity") == "low").row(0, named=True)
+    assert baseline["pass_count"] == 1
+    assert baseline["mean_fuel_used_l"] == pytest.approx(0.40)
+    assert low["baseline_mean_fuel_used_l"] == pytest.approx(0.40)
+
+
 def _zone_pass(
     zone_id: str,
     display_label: str,

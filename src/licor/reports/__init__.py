@@ -11,6 +11,15 @@ from licor.reports.zone_validation_map import (
     write_zone_validation_html,
     zone_markers_from_proposals,
 )
+from licor.reports.lap_telemetry_report import (
+    LapTelemetryReportConfig,
+    build_labeled_lap_telemetry_samples,
+    build_spa_lmp2_lap_telemetry_report_artifact,
+    create_lap_telemetry_report_figure,
+    empty_lap_telemetry_samples_frame,
+    prepare_lap_telemetry_report_samples,
+    write_lap_telemetry_report_html,
+)
 from licor.reports.zone_curve_report import (
     create_zone_curve_report_figure,
     write_zone_curve_report_html,
@@ -31,17 +40,24 @@ from licor.reports.zone_telemetry_report import (
 
 __all__ = [
     "add_cumulative_distance",
+    "LapTelemetryReportConfig",
+    "build_labeled_lap_telemetry_samples",
+    "build_spa_lmp2_lap_telemetry_report_artifact",
     "build_track_validation_points",
     "build_zone_telemetry_window",
+    "create_lap_telemetry_report_figure",
     "create_zone_validation_figure",
     "create_zone_curve_report_figure",
     "create_zone_model_report_figure",
     "create_zone_plan_report_figure",
     "create_zone_telemetry_report_figure",
+    "empty_lap_telemetry_samples_frame",
     "interpolate_track_position",
     "load_geojson_track_points",
     "lonlat_to_local_xy",
+    "prepare_lap_telemetry_report_samples",
     "scale_lap_distance",
+    "write_lap_telemetry_report_html",
     "write_zone_validation_html",
     "write_zone_curve_report_html",
     "write_zone_model_report_html",

@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-import itertools
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,15 +32,13 @@ def optimize_zone_lico_plan(
         return _empty_zone_plan_frame()
 
     grouped = _candidates_by_zone(candidates)
-    combination_count = 1
-    for group in grouped:
-        combination_count *= len(group)
-    if combination_count > config.max_combinations:
-        raise ValueError("too many zone LICO combinations to brute-force safely")
-
-    best = _best_combination(grouped, target_fuel_saved_l=config.target_fuel_saved_per_lap_l)
+    frontier = _candidate_frontier(grouped, max_frontier_size=config.max_combinations)
+    best = _best_combination(
+        frontier,
+        target_fuel_saved_l=config.target_fuel_saved_per_lap_l,
+    )
     if best is None:
-        best = _max_fuel_combination(grouped)
+        best = _max_fuel_combination(frontier)
         plan_status = "target_unreachable"
     else:
         plan_status = "target_met"
@@ -173,33 +169,70 @@ def _pareto_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]
 
 
 def _best_combination(
-    grouped: list[list[dict[str, Any]]],
+    frontier: list[tuple[float, float, float, tuple[dict[str, Any], ...]]],
     *,
     target_fuel_saved_l: float,
 ) -> tuple[dict[str, Any], ...] | None:
-    feasible = []
-    for combination in itertools.product(*grouped):
-        total_fuel = sum(row["predicted_fuel_saved_l"] for row in combination)
-        if total_fuel + 1e-12 < target_fuel_saved_l:
-            continue
-        total_time = sum(row["optimization_time_lost_s"] for row in combination)
-        total_distance = sum(row["selected_lico_distance_m"] for row in combination)
-        feasible.append((total_time, total_fuel - target_fuel_saved_l, total_distance, combination))
+    feasible = [
+        item
+        for item in frontier
+        if item[1] + 1e-12 >= target_fuel_saved_l
+    ]
     if not feasible:
         return None
-    return min(feasible, key=lambda item: (item[0], item[1], item[2]))[3]
+    return min(
+        feasible,
+        key=lambda item: (item[0], item[1] - target_fuel_saved_l, item[2]),
+    )[3]
 
 
 def _max_fuel_combination(
-    grouped: list[list[dict[str, Any]]],
+    frontier: list[tuple[float, float, float, tuple[dict[str, Any], ...]]],
 ) -> tuple[dict[str, Any], ...]:
     return max(
-        itertools.product(*grouped),
-        key=lambda combination: (
-            sum(row["predicted_fuel_saved_l"] for row in combination),
-            -sum(row["optimization_time_lost_s"] for row in combination),
-        ),
-    )
+        frontier,
+        key=lambda item: (item[1], -item[0], -item[2]),
+    )[3]
+
+
+def _candidate_frontier(
+    grouped: list[list[dict[str, Any]]],
+    *,
+    max_frontier_size: int,
+) -> list[tuple[float, float, float, tuple[dict[str, Any], ...]]]:
+    frontier: list[tuple[float, float, float, tuple[dict[str, Any], ...]]] = [
+        (0.0, 0.0, 0.0, ())
+    ]
+    for group in grouped:
+        expanded = []
+        for total_time, total_fuel, total_distance, combination in frontier:
+            for candidate in group:
+                expanded.append(
+                    (
+                        total_time + float(candidate["optimization_time_lost_s"]),
+                        total_fuel + float(candidate["predicted_fuel_saved_l"]),
+                        total_distance + float(candidate["selected_lico_distance_m"]),
+                        combination + (candidate,),
+                    )
+                )
+        frontier = _pareto_frontier(expanded, max_frontier_size=max_frontier_size)
+    return frontier
+
+
+def _pareto_frontier(
+    states: list[tuple[float, float, float, tuple[dict[str, Any], ...]]],
+    *,
+    max_frontier_size: int,
+) -> list[tuple[float, float, float, tuple[dict[str, Any], ...]]]:
+    efficient = []
+    best_fuel_at_or_below_time = -1.0
+    for state in sorted(states, key=lambda item: (item[0], -item[1], item[2])):
+        if state[1] > best_fuel_at_or_below_time + 1e-12:
+            efficient.append(state)
+            best_fuel_at_or_below_time = state[1]
+    if len(efficient) > max_frontier_size:
+        raise ValueError("too many pareto states to optimize safely")
+    return efficient
 
 
 def _plan_frame(

@@ -94,7 +94,7 @@ Current implementation in `src/licor/analysis/lap_summary.py` uses:
 - configurable lap-distance bounds, initially `6500` to `7500` meters for Spa;
 - non-negative full-lap fuel burn from first minus last `Fuel Level` sample;
 - no active `In Pits` state during the lap interval;
-- driver labels from `config/datasets/spa_lmp2_2026-05-14.json`.
+- driver labels from `config/datasets/spa_lmp2_v2_2026-05-21.json`.
 
 Driver labels `valid` and `borderline` are included in the calibration lap set
 when basic telemetry validation also passes. Driver labels `context`,
@@ -113,6 +113,8 @@ fields:
 - `run_type`: `push`, `global_lico`, `targeted_lico`, `race`, `practice`
 - `lico_intensity`: `none`, `light`, `medium`, `heavy`, `unknown`
 - `collection_protocol_id`
+- `collection_session_id`: optional protocol session identifier when the run
+  should be tied to a specific planned session
 - `target_zone`
 - `target_zones`
 - `target_zones_source`: optional sentinel such as `from_exported_plan` when
@@ -124,7 +126,7 @@ fields:
 - `audio_cue_plan_id`
 - `execution_quality`
 - `labels_quality`: `high`, `medium`, `low`
-- `notes`
+- `driver_notes`
 
 `lico_intensity` is a collection label, not a final optimization class. The
 model should use it to understand the experiment design, then extract continuous
@@ -144,6 +146,26 @@ labels for the next Spa data collection pass. Dataset sidecars should reference
 that protocol through `collection_protocol_id` instead of duplicating the full
 protocol in every run entry.
 
+Current implementation in `src/licor/analysis/lap_summary.py` accepts the v2
+metadata fields on each `RunLapLabels` entry and propagates them into lap
+summaries. `src/licor/analysis/zone_pass.py` carries the same run-level metadata
+into every extracted `zone_pass` row. This means future non-labelled or weakly
+labelled Spa v2 runs can feed readiness reports directly from their sidecar JSON
+instead of relying on the legacy `none`/`low`/`medium`/`high` collection labels.
+
+`src/licor/analysis/collection_metadata.py` provides the pre-telemetry
+validation layer for those sidecars:
+
+- `run_collection_metadata_frame` emits one run-metadata row per sidecar run;
+- `validate_dataset_collection_metadata` checks protocol id, collection design,
+  target zones, execution quality, LICO profile id, and required audio plan id
+  for recommendation-execution runs;
+- `attach_collection_metadata_to_zone_passes` can enrich an existing
+  `zone_pass` table by `run_id` when metadata was generated separately.
+
+The validation layer should report missing v2 metadata explicitly. It should not
+infer `collection_design` from old global labels such as `low` or `high`.
+
 Suggested `execution_quality` labels:
 
 - `clean`: the intended LICO action and braking/exiting phase were executed
@@ -153,6 +175,143 @@ Suggested `execution_quality` labels:
 - `poor`: a driver mistake, missed brake point, abnormal exit, or telemetry
   artifact likely contaminates the zone;
 - `unknown`: no driver review is available yet.
+
+## Data Readiness Tables
+
+`src/licor/analysis/data_readiness.py` provides readiness summaries for Spa v2
+and future weakly labelled collection passes. These summaries are descriptive:
+they tell us whether the dataset has enough clean coverage to update curves,
+not whether a zone is strategically optimal.
+
+Suggested `zone_data_readiness` fields:
+
+- `zone_id`
+- `display_label`
+- `total_pass_count`
+- `valid_pass_count`
+- `invalid_pass_count`
+- `unique_run_count`
+- `unique_lap_count`
+- `baseline_pass_count`
+- `lico_pass_count`
+- `controlled_random_pass_count`
+- `targeted_zone_pass_count`
+- `recommendation_execution_pass_count`
+- `lico_distance_bin_count`
+- `min_lico_distance_before_brake_m`
+- `max_lico_distance_before_brake_m`
+- `collection_designs`
+- `validity_labels`
+- `readiness_status`
+- `readiness_flags`
+
+Suggested `collection_protocol_readiness` fields:
+
+- `protocol_id`
+- `session_id`
+- `collection_design`
+- `target_zones`
+- `target_zones_source`
+- `minimum_clean_laps`
+- `observed_clean_laps`
+- `observed_runs`
+- `observed_target_zones`
+- `observed_cue_event_count`
+- `readiness_status`
+- `readiness_flags`
+
+Readiness deliberately keeps baseline/no-LICO passes separate from LICO
+distance bins. `has_lico == false` is not treated as proof of a clean push lap
+unless collection metadata or legacy `none` labels support that interpretation.
+For Spa v2, `collection_design` is the preferred context signal; older global
+`none`/`low`/`medium`/`high` labels are only a fallback.
+
+`recommendation_execution` readiness is stricter than ordinary zone-pass
+coverage. When `target_zones_source` is `from_exported_plan`, zone passes alone
+are not enough: cue/event logs must also be present so the run can be evaluated
+as planned-versus-executed validation. Pit stop validation is intentionally
+outside `zone_pass` readiness and should be checked through pit-stop observation
+tables.
+
+`src/licor/analysis/processed_artifacts.py` persists the current reproducible
+Spa analysis artifacts used by readiness:
+
+- `data/processed/spa_lmp2_zone_passes.csv`;
+- `data/processed/spa_lmp2_zone_passes.parquet`;
+- `data/processed/spa_lmp2_v2_zone_data_readiness.csv`;
+- `data/processed/spa_lmp2_v2_protocol_readiness.csv`.
+
+CSV outputs serialize list-valued columns with `|` separators so they remain
+plain spreadsheet-friendly files. Parquet keeps richer nested column types.
+
+## Core Lap Telemetry Report
+
+`src/licor/reports/lap_telemetry_report.py` provides the offline Plotly report
+for full-lap speed, throttle, brake, fuel level, and lap-distance traces. It is
+intended for quick validation of current and future data collection runs before
+opening any Streamlit workflow.
+
+The report consumes normalized lap samples with these columns:
+
+- `run_id`;
+- `lap_number`;
+- `collection_label`;
+- `driver_lap_label`;
+- `lap_elapsed_s`;
+- `lap_distance_m`;
+- `ground_speed_kph`;
+- `throttle_pct`;
+- `brake_pct`;
+- `fuel_level_l`.
+
+`build_labeled_lap_telemetry_samples` rebuilds this sample table from a dataset
+sidecar and LMU DuckDB files, including only driver-labelled `valid` and
+`borderline` laps by default. `create_lap_telemetry_report_figure` renders the
+five metric rows as a pure Plotly figure, and
+`write_lap_telemetry_report_html` writes a self-contained HTML file with Plotly
+embedded so the report can be opened without a Streamlit server or an internet
+connection.
+
+The current Spa artifact is:
+
+- `data/processed/spa_lmp2_lap_telemetry_report.html`.
+
+## Run/Lap Quality Manifest
+
+`src/licor/analysis/lap_quality.py` provides the v2 run/lap quality manifest.
+It is an audit table, not a model and not a strategic decision surface. Its job
+is to answer "usable for what?" before future data is allowed to influence zone
+readiness, curve updates, or plan-execution validation.
+
+The manifest combines:
+
+- lap summary fields such as driver labels, fuel used, lap time, basic validity,
+  and exclusion reason;
+- run-level v2 metadata such as protocol id, collection design, execution
+  quality, and label quality;
+- optional lap-sample continuity checks such as sample count, max time gap, max
+  distance gap, distance monotonicity, fuel increases, speed jumps, and input
+  value ranges;
+- optional zone-pass checks such as valid zone-pass rate, detected LICO count,
+  zero-throttle zone starts, and brake-reference drift.
+
+Key output fields:
+
+- `quality_status`: `ready`, `review_recommended`, or `needs_review`;
+- `quality_flags`: explicit audit reasons such as `missing_collection_design`,
+  `large_time_gap`, `low_valid_zone_pass_rate`, or `detected_lico`;
+- `recommended_uses`: list-valued permissions such as `report_only`,
+  `lap_summary`, `zone_readiness`, `curve_update_candidate`,
+  `baseline_reference`, or `plan_execution_review`.
+
+Baseline fuel/time deltas in this manifest are audit signals only. They should
+not be interpreted as fuel saved, time lost, optimizer evidence, or zone-level
+model output. Zone-specific credibility remains the responsibility of
+`zone_pass`, driver review annotations, curve diagnostics, and readiness tables.
+
+The current Spa artifact is:
+
+- `data/processed/spa_lmp2_v2_lap_quality_manifest.csv`.
 
 ## Zone-Level Analysis Tables
 
@@ -472,7 +631,7 @@ The current Spa sanity artifact is written locally to
 
 `config/driver_reviews/` stores driver review feedback that should affect
 analysis without deleting raw observations. The first Spa review file is
-`config/driver_reviews/spa_lmp2_zone_review_2026-05-14.json`.
+`config/driver_reviews/spa_lmp2_v2_zone_review_2026-05-21.json`.
 
 Driver review can currently record:
 

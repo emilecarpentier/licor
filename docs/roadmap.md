@@ -137,6 +137,16 @@ recommendation loop is credible.
   stricter driver caps, diagnostic-zone exclusion, and fuel safety margins.
 - [x] Define a Spa v2 data collection protocol with controlled-random LICO,
   targeted zone variation, and recommendation-execution runs.
+- [x] Add Spa v2 data-readiness summaries for zone coverage and protocol
+  coverage before refitting curves.
+- [x] Persist current Spa zone-pass and Spa v2 readiness CSV/parquet artifacts.
+- [x] Add a Spa v2 run-metadata ingestion contract and validation layer so
+  future non-labelled runs can link to collection protocols before telemetry
+  processing.
+- [x] Add a run/lap quality manifest v2 to gate future collection laps before
+  zone readiness and curve updates.
+- [x] Use four Spa v2 controlled-random runs as the first post-v1 coverage gate
+  before deciding whether targeted-zone collection is still necessary.
 - [x] Add an exportable LICO plan format suitable for live cues.
 - [x] Add a replay-style execution schema for planned-versus-observed live cue
   validation.
@@ -145,7 +155,7 @@ recommendation loop is credible.
 - [x] Add an injectable replay/audio wrapper around the tested live-cue runner.
 - [ ] Validate the real audio adapter against LMU telemetry during a driving
   session.
-- [ ] Generate Plotly charts for speed, throttle, brake, fuel, and lap distance.
+- [x] Generate Plotly charts for speed, throttle, brake, fuel, and lap distance.
 - [x] Generate zone-level comparison reports.
 - [ ] Build a simple Streamlit dashboard around the tested analysis functions
   after offline reports and live-cue validation are useful.
@@ -181,13 +191,26 @@ The current local dataset is enough to start implementation:
 - `low`: low LICO sample;
 - `medium`: medium LICO sample;
 - `high`: high LICO sample;
-- `pitstop`: pit/refill sample.
+- `pitstop`: pit/refill sample;
+- `baseline` refresh: two metadata-linked Spa v2 push-baseline runs;
+- `controlled_random`: four metadata-linked Spa v2 runs.
 
 The first reproducible Spa pipeline now exists. Future Spa data should move away
 from broad `none`/`low`/`medium`/`high` labels and toward:
 
 - controlled-random LICO runs that vary lift distances across zones to fill the
   continuous curve;
-- targeted zone runs that break correlations between zones;
+- targeted zone runs that break correlations between zones, but only after
+  post-refit diagnostics show that controlled-random coverage is still
+  insufficient;
 - recommendation-execution runs once an audio cue can tell the driver where to
   lift and log whether the plan was followed.
+
+Recommended next step after integrating the first four Spa v2 controlled-random runs:
+
+```text
+Refit the zone curves and optimizer plans from the integrated Spa v2 dataset,
+audit which zones remain noisy or weakly supported, and then decide whether a
+small targeted-zone pass is still worth the time before moving to
+recommendation-execution validation.
+```

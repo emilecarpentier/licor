@@ -1,0 +1,4 @@
+interface:
+  display_name: "Zone Refit Sanity"
+  short_description: "Refit zone curves and sanity-check"
+  default_prompt: "Use $zone-curve-refit-and-sanity to refit Spa zone curves and verify model sanity."

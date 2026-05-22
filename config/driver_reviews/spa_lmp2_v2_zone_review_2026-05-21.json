@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "dataset_id": "spa_lmp2_v2_2026-05-21",
+  "track_name": "Circuit de Spa-Francorchamps",
+  "car_class": "LMP2_ELMS",
+  "review_status": "draft",
+  "notes": "Combined Spa driver review state used by the current working dataset sidecar. Legacy Spa v1 signal annotations are preserved here so the default pipeline does not lose prior interpretation, while Spa v2 collection notes preserve intentional probes without excluding useful observations. The driver-reported controlled_random_02 lap 33 accident maps to LMU telemetry lap 32 in the pipeline; exclusions use LMU lap_number values. Baseline push run 02 also contains a driver-reviewed T08-only exclusion on lap 15 while the rest of the lap remains usable.",
+  "zone_annotations": [
+    {
+      "zone_id": "spa_t01",
+      "signal_tags": [
+        "fuel_signal_plausible",
+        "time_signal_unclear"
+      ],
+      "notes": "Fuel relation makes sense. Time curve shows little loss after excluding a driver braking error, which is surprising and needs review."
+    },
+    {
+      "zone_id": "spa_t05_t06",
+      "signal_tags": [
+        "clean_signal",
+        "classic_lico_zone"
+      ],
+      "notes": "Clean relationship; classic lift-and-coast zone."
+    },
+    {
+      "zone_id": "spa_t08",
+      "signal_tags": [
+        "needs_investigation",
+        "noisy_time_signal",
+        "zone_start_adjusted",
+        "throttle_artifact_corrected"
+      ],
+      "notes": "LICO distance appeared clustered near 100 m before braking, including low LICO. Driver review moved zone start 20 m earlier. Lap 16 contained impossible repeated 71.076% throttle artifacts before the real lift; extraction now ignores isolated pre-coast throttle dips."
+    },
+    {
+      "zone_id": "spa_t09",
+      "signal_tags": [
+        "no_credible_lico_signal"
+      ],
+      "notes": "Driver review: impossible to meaningfully lift-and-coast in this corner; current data shows no useful signal."
+    },
+    {
+      "zone_id": "spa_t10_t11",
+      "signal_tags": [
+        "clean_signal",
+        "fuel_signal_plausible",
+        "time_signal_plausible"
+      ],
+      "notes": "Clean curve, especially fuel, with useful time relationship."
+    },
+    {
+      "zone_id": "spa_t12_t13",
+      "signal_tags": [
+        "fuel_signal_plausible",
+        "time_signal_unclear"
+      ],
+      "notes": "Fuel relation is credible. Time gains/losses are small and visually unclear."
+    },
+    {
+      "zone_id": "spa_t14",
+      "signal_tags": [
+        "fuel_signal_plausible",
+        "noisy_time_signal"
+      ],
+      "notes": "Fuel relation is cleaner than time. Driver identified lap 24/T14 as a pilot error/outlier."
+    },
+    {
+      "zone_id": "spa_t18",
+      "signal_tags": [
+        "clean_signal",
+        "fuel_signal_plausible",
+        "time_signal_plausible"
+      ],
+      "notes": "Extremely clean fuel and time relationship."
+    }
+  ],
+  "zone_pass_exclusions": [
+    {
+      "run_id": "spa_lmp2_medium_2026-05-14T03_18_32Z",
+      "lap_number": 24,
+      "zone_id": "spa_t01",
+      "reason": "driver_missed_brake_point",
+      "notes": "Exclude only this legacy v1 lap-zone observation; the rest of lap 24 remains usable."
+    },
+    {
+      "run_id": "spa_lmp2_medium_2026-05-14T03_18_32Z",
+      "lap_number": 24,
+      "zone_id": "spa_t14",
+      "reason": "driver_error_outlier",
+      "notes": "Exclude only this legacy v1 lap-zone observation; the rest of lap 24 remains usable."
+    },
+    {
+      "run_id": "spa_lmp2_2026-05-22T00_16_10Z_controlled_random_02",
+      "lap_number": 32,
+      "zone_id": "spa_t14",
+      "reason": "driver_accident_contaminated_zone",
+      "notes": "Driver reported an accident on this run's accident lap. LMU telemetry maps the impact to lap 32 at approximately 4897 m, inside the T14 zone. Exclude the accident/preceding zone; earlier zones in the lap remain usable."
+    },
+    {
+      "run_id": "spa_lmp2_2026-05-22T00_16_10Z_controlled_random_02",
+      "lap_number": 32,
+      "zone_id": "spa_t18",
+      "reason": "post_accident_same_lap",
+      "notes": "Exclude zones after the accident on the same telemetry lap. T18 occurs after the impact distance; earlier zones before T14 remain usable."
+    },
+    {
+      "run_id": "spa_lmp2_2026-05-22T00_16_10Z_controlled_random_02",
+      "lap_number": 33,
+      "zone_id": "spa_t01",
+      "reason": "post_accident_next_lap_t1_only",
+      "notes": "Driver reported the lap after the accident is otherwise usable, but T1 should be excluded. LMU telemetry numbering maps this to lap 33."
+    },
+    {
+      "run_id": "spa_lmp2_2026-05-21T22_31_31Z_baseline_push_02",
+      "lap_number": 15,
+      "zone_id": "spa_t08",
+      "reason": "driver_error_zone_only",
+      "notes": "Driver reported an isolated mistake at T08 on the third timed lap of baseline push run 02. Keep the rest of lap 15 usable for baseline context and zone extraction."
+    }
+  ],
+  "zone_pass_annotations": [
+    {
+      "run_id": "spa_lmp2_2026-05-21T22_57_26Z_controlled_random_01",
+      "lap_number": 26,
+      "zone_id": "spa_t12_t13",
+      "review_tags": [
+        "intentional_boundary_probe",
+        "candidate_lico_window_extension",
+        "keep_for_boundary_review"
+      ],
+      "notes": "Driver intentionally pushed the LICO limit at T12-T13. The detected pass starts with zero throttle at the current zone start, so this should not be treated as a driver error. Keep the observation and review whether T12-T13 lico_window_start_m should move earlier after more Spa v2 runs."
+    }
+  ]
+}

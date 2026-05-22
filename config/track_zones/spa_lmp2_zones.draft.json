@@ -80,15 +80,15 @@
       "zone_id": "spa_t12_t13",
       "turn_numbers": [12, 13],
       "display_label": "T12-T13",
-      "start_distance_m": 4109.492676,
-      "lico_window_start_m": 4109.492676,
+      "start_distance_m": 4079.492676,
+      "lico_window_start_m": 4079.492676,
       "brake_reference_m": 4238.806152,
       "end_distance_m": 4587.472168,
       "lico_eligible": true,
       "optimization_role": "candidate",
       "validation_end_rule": "manual_distance",
       "review_status": "driver_reviewed",
-      "notes": "Fagnes context only. Zone start and validation end driver-reviewed on top-down map with -130 m offset."
+      "notes": "Fagnes context only. Zone start and validation end driver-reviewed on top-down map with -130 m offset. Start moved 30 m earlier in total after four controlled-random runs because repeated valid passes represented realistic long LICO entries that were already at zero throttle at the previous boundary."
     },
     {
       "zone_id": "spa_t14",

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Strategy Plan Pack"
+  short_description: "Build strategy and live-cue plans"
+  default_prompt: "Use $strategy-plan-pack to rebuild LICOR strategy outputs and live-cue plans."

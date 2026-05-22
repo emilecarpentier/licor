@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spa V2 Intake"
+  short_description: "Ingest Spa telemetry runs cleanly"
+  default_prompt: "Use $spa-v2-run-intake to intake new Spa telemetry runs and rebuild readiness artifacts."

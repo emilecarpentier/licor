@@ -42,9 +42,20 @@ class RunLapLabels:
     context_laps: frozenset[int] = field(default_factory=frozenset)
     excluded_laps: frozenset[int] = field(default_factory=frozenset)
     include_in_lap_summary: bool = True
+    collection_protocol_id: str = ""
+    collection_session_id: str = ""
+    collection_design: str = ""
+    target_zones: tuple[str, ...] = field(default_factory=tuple)
+    target_zones_source: str = ""
+    planned_lico_profile_id: str = ""
+    planned_lico_profile_description: str = ""
+    audio_cue_plan_id: str = ""
+    execution_quality: str = "unknown"
+    driver_notes: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RunLapLabels:
+        target_zones, target_zones_source = _target_zones_from_dict(data)
         return cls(
             run_id=str(data["run_id"]),
             file=str(data["file"]),
@@ -62,6 +73,18 @@ class RunLapLabels:
             context_laps=frozenset(int(lap) for lap in data.get("context_laps", [])),
             excluded_laps=frozenset(int(lap) for lap in data.get("excluded_laps", [])),
             include_in_lap_summary=bool(data.get("include_in_lap_summary", True)),
+            collection_protocol_id=str(data.get("collection_protocol_id", "")),
+            collection_session_id=str(data.get("collection_session_id", "")),
+            collection_design=str(data.get("collection_design", "")),
+            target_zones=target_zones,
+            target_zones_source=target_zones_source,
+            planned_lico_profile_id=str(data.get("planned_lico_profile_id", "")),
+            planned_lico_profile_description=str(
+                data.get("planned_lico_profile_description", "")
+            ),
+            audio_cue_plan_id=str(data.get("audio_cue_plan_id", "")),
+            execution_quality=str(data.get("execution_quality", "unknown")),
+            driver_notes=str(data.get("driver_notes", data.get("notes", ""))),
         )
 
     def driver_label_for_lap(self, lap_number: int) -> str:
@@ -77,6 +100,20 @@ class RunLapLabels:
 
     def driver_includes_lap(self, lap_number: int) -> bool:
         return self.driver_label_for_lap(lap_number) in {"valid", "borderline"}
+
+    def collection_metadata(self) -> dict[str, object]:
+        return {
+            "collection_protocol_id": self.collection_protocol_id,
+            "collection_session_id": self.collection_session_id,
+            "collection_design": self.collection_design,
+            "target_zones": list(self.target_zones),
+            "target_zones_source": self.target_zones_source,
+            "planned_lico_profile_id": self.planned_lico_profile_id,
+            "planned_lico_profile_description": self.planned_lico_profile_description,
+            "audio_cue_plan_id": self.audio_cue_plan_id,
+            "execution_quality": self.execution_quality,
+            "driver_notes": self.driver_notes,
+        }
 
 
 @dataclass(frozen=True)
@@ -205,6 +242,7 @@ def summarize_laps(
             "car_class": run_labels.car_class if run_labels is not None else None,
             "run_type": run_labels.run_type if run_labels is not None else None,
             "collection_label": run_labels.collection_label if run_labels is not None else None,
+            **(run_labels.collection_metadata() if run_labels is not None else _empty_collection_metadata()),
             "labels_quality": run_labels.labels_quality if run_labels is not None else None,
             "lap_number": interval.lap_number,
             "lap_start_ts": interval.start_ts,
@@ -244,11 +282,55 @@ def summarize_laps(
         }
         rows.append(row)
 
-    return pl.DataFrame(rows)
+    return _lap_summary_frame(rows)
 
 
 def filter_valid_laps(summary: pl.DataFrame) -> pl.DataFrame:
     return summary.filter(pl.col("is_valid_lap")).sort(["run_id", "lap_number"])
+
+
+def _target_zones_from_dict(data: dict[str, Any]) -> tuple[tuple[str, ...], str]:
+    target_zones = data.get("target_zones", [])
+    target_zones_source = str(data.get("target_zones_source", ""))
+    if isinstance(target_zones, str):
+        return (), target_zones
+    if target_zones is None:
+        return (), target_zones_source
+    return tuple(str(zone_id) for zone_id in target_zones), target_zones_source
+
+
+def _empty_collection_metadata() -> dict[str, object]:
+    return {
+        "collection_protocol_id": None,
+        "collection_session_id": None,
+        "collection_design": None,
+        "target_zones": [],
+        "target_zones_source": None,
+        "planned_lico_profile_id": None,
+        "planned_lico_profile_description": None,
+        "audio_cue_plan_id": None,
+        "execution_quality": None,
+        "driver_notes": None,
+    }
+
+
+def _lap_summary_frame(rows: list[dict[str, object]]) -> pl.DataFrame:
+    frame = pl.DataFrame(rows)
+    if frame.is_empty():
+        return frame
+
+    return frame.with_columns(
+        pl.col("target_zones").cast(pl.List(pl.String)),
+        pl.col("collection_protocol_id").cast(pl.String),
+        pl.col("collection_session_id").cast(pl.String),
+        pl.col("collection_design").cast(pl.String),
+        pl.col("target_zones_source").cast(pl.String),
+        pl.col("planned_lico_profile_id").cast(pl.String),
+        pl.col("planned_lico_profile_description").cast(pl.String),
+        pl.col("audio_cue_plan_id").cast(pl.String),
+        pl.col("execution_quality").cast(pl.String),
+        pl.col("driver_notes").cast(pl.String),
+    )
 
 
 def _channel_window(frame: pl.DataFrame | None, start_ts: float, end_ts: float) -> pl.DataFrame:
