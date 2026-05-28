@@ -3,6 +3,7 @@ from pathlib import Path
 
 import polars as pl
 
+import licor.analysis.processed_artifacts as processed_artifacts_module
 from licor.analysis import (
     build_lap_quality_manifest,
     write_lap_quality_manifest_artifact,
@@ -55,6 +56,93 @@ def test_writes_data_readiness_artifacts(tmp_path: Path):
         ("baseline", "complete"),
         ("controlled_random", "complete"),
     ]
+
+
+def test_build_spa_v2_readiness_artifacts_forwards_live_cue_events_csv(
+    tmp_path: Path,
+    monkeypatch,
+):
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text(json.dumps(_protocol()), encoding="utf-8")
+    cue_events_path = tmp_path / "live_cue_events.csv"
+    pl.DataFrame(
+        [
+            {"plan_id": "plan_v1", "run_id": "recommendation_execution_selected_01"},
+            {"plan_id": "plan_v1", "run_id": "recommendation_execution_selected_01"},
+        ]
+    ).write_csv(cue_events_path)
+
+    captured: dict[str, object] = {}
+
+    def fake_build_labeled_zone_passes(**_: object) -> pl.DataFrame:
+        return _zone_passes()
+
+    def fake_write_zone_pass_artifacts(
+        zone_passes: pl.DataFrame,
+        *,
+        csv_path: str | Path,
+        parquet_path: str | Path | None = None,
+    ):
+        csv_path = Path(csv_path)
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        zone_passes.write_csv(csv_path)
+        return processed_artifacts_module.ZonePassArtifactPaths(
+            zone_passes_csv=csv_path,
+            zone_passes_parquet=None,
+        )
+
+    def fake_write_data_readiness_artifacts(
+        zone_passes: pl.DataFrame,
+        *,
+        protocol_file: str | Path,
+        zone_readiness_csv_path: str | Path,
+        protocol_readiness_csv_path: str | Path,
+        live_cue_events: pl.DataFrame | None = None,
+        config=None,
+    ):
+        del zone_passes, protocol_file, config
+        captured["live_cue_events_height"] = 0 if live_cue_events is None else live_cue_events.height
+        zone_readiness_csv_path = Path(zone_readiness_csv_path)
+        protocol_readiness_csv_path = Path(protocol_readiness_csv_path)
+        zone_readiness_csv_path.parent.mkdir(parents=True, exist_ok=True)
+        pl.DataFrame(
+            [{"zone_id": "spa_t05_t06", "readiness_status": "ready_for_curve_update"}]
+        ).write_csv(zone_readiness_csv_path)
+        pl.DataFrame(
+            [{"collection_design": "baseline", "readiness_status": "complete"}]
+        ).write_csv(protocol_readiness_csv_path)
+        return processed_artifacts_module.DataReadinessArtifactPaths(
+            zone_readiness_csv=zone_readiness_csv_path,
+            protocol_readiness_csv=protocol_readiness_csv_path,
+        )
+
+    monkeypatch.setattr(
+        processed_artifacts_module,
+        "build_labeled_zone_passes",
+        fake_build_labeled_zone_passes,
+    )
+    monkeypatch.setattr(
+        processed_artifacts_module,
+        "write_zone_pass_artifacts",
+        fake_write_zone_pass_artifacts,
+    )
+    monkeypatch.setattr(
+        processed_artifacts_module,
+        "write_data_readiness_artifacts",
+        fake_write_data_readiness_artifacts,
+    )
+
+    processed_artifacts_module.build_spa_v2_readiness_artifacts(
+        project_root=tmp_path,
+        output_dir="out",
+        dataset_label_file="dataset.json",
+        track_zone_file="zones.json",
+        protocol_file=protocol_path.name,
+        live_cue_events_csv=cue_events_path.name,
+        write_parquet=False,
+    )
+
+    assert captured["live_cue_events_height"] == 2
 
 
 def test_writes_lap_quality_manifest_artifact(tmp_path: Path):

@@ -51,6 +51,7 @@ def test_loads_spa_v2_protocol_config():
     frame = protocol.to_frame()
 
     assert protocol.protocol_id == "spa_lmp2_v2_collection_protocol"
+    assert "audio_cue_plan_id" in protocol.required_run_metadata
     assert set(frame["collection_design"].to_list()) == {
         "baseline",
         "controlled_random",

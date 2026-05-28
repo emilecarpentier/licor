@@ -70,6 +70,76 @@ def test_wraps_planned_lift_start_when_track_length_is_provided():
     assert live_plan["track_length_m"].to_list() == [pytest.approx(7000.0)]
 
 
+def test_advances_cue_distance_for_latency_compensation():
+    plan = pl.DataFrame([_zone_plan_row("spa_t01", "T01", 60.0, True, 0.05, 0.10)])
+    zones = pl.DataFrame([{"zone_id": "spa_t01", "brake_reference_m": 410.0}])
+
+    live_plan = build_live_cue_plan(
+        plan,
+        zones,
+        config=LiveCuePlanConfig(
+            plan_id="latency",
+            track_name="Spa-Francorchamps",
+            car_class="LMP2",
+            cue_latency_compensation_s=0.35,
+            cue_latency_reference_speed_kph=250.0,
+        ),
+    )
+
+    row = live_plan.row(0, named=True)
+    assert row["planned_lift_start_m"] == pytest.approx(350.0)
+    assert row["cue_distance_m"] == pytest.approx(325.69444444444446)
+    assert row["cue_latency_compensation_distance_m"] == pytest.approx(
+        24.305555555555557
+    )
+    assert row["cue_latency_reference_speed_kph"] == pytest.approx(250.0)
+
+
+def test_uses_plan_row_speed_for_latency_compensation_when_available():
+    plan = pl.DataFrame(
+        [
+            {
+                **_zone_plan_row("spa_t01", "T01", 60.0, True, 0.05, 0.10),
+                "mean_brake_start_speed_kph": 180.0,
+            }
+        ]
+    )
+    zones = pl.DataFrame([{"zone_id": "spa_t01", "brake_reference_m": 410.0}])
+
+    live_plan = build_live_cue_plan(
+        plan,
+        zones,
+        config=LiveCuePlanConfig(
+            plan_id="latency_row_speed",
+            track_name="Spa-Francorchamps",
+            car_class="LMP2",
+            cue_latency_compensation_s=0.30,
+        ),
+    )
+
+    row = live_plan.row(0, named=True)
+    assert row["cue_latency_reference_speed_kph"] == pytest.approx(180.0)
+    assert row["cue_latency_compensation_distance_m"] == pytest.approx(15.0)
+    assert row["cue_distance_m"] == pytest.approx(335.0)
+
+
+def test_reports_missing_speed_when_latency_compensation_cannot_be_computed():
+    plan = pl.DataFrame([_zone_plan_row("spa_t01", "T01", 60.0, True, 0.05, 0.10)])
+    zones = pl.DataFrame([{"zone_id": "spa_t01", "brake_reference_m": 410.0}])
+
+    with pytest.raises(ValueError, match="cue latency compensation requires"):
+        build_live_cue_plan(
+            plan,
+            zones,
+            config=LiveCuePlanConfig(
+                plan_id="latency_missing_speed",
+                track_name="Spa-Francorchamps",
+                car_class="LMP2",
+                cue_latency_compensation_s=0.35,
+            ),
+        )
+
+
 def test_reports_missing_brake_reference_for_selected_zone():
     plan = pl.DataFrame([_zone_plan_row("missing", "Missing", 40.0, True, 0.02, 0.06)])
     zones = pl.DataFrame([{"zone_id": "other", "brake_reference_m": 100.0}])

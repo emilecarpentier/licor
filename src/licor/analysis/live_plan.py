@@ -14,6 +14,9 @@ class LiveCuePlanConfig:
     minimum_confidence_label: str = ""
     cue_tolerance_m: float = 5.0
     track_length_m: float | None = None
+    cue_latency_compensation_s: float = 0.0
+    cue_latency_reference_speed_kph: float | None = None
+    cue_latency_compensation_distance_m: float | None = None
     include_zero_lico: bool = False
     notes: str = ""
 
@@ -47,6 +50,12 @@ def build_live_cue_plan(
             selected_distance_m,
             track_length_m=config.track_length_m,
         )
+        cue_latency_reference_speed_kph = _cue_latency_reference_speed_kph(row, config=config)
+        cue_latency_compensation_distance_m = _cue_latency_compensation_distance_m(
+            row,
+            config=config,
+            reference_speed_kph=cue_latency_reference_speed_kph,
+        )
         rows.append(
             {
                 "schema_version": 1,
@@ -59,9 +68,16 @@ def build_live_cue_plan(
                 "brake_reference_m": float(brake_reference_m),
                 "selected_lico_distance_m": selected_distance_m,
                 "planned_lift_start_m": planned_lift_start_m,
-                "cue_distance_m": planned_lift_start_m,
+                "cue_distance_m": _cue_distance_m(
+                    planned_lift_start_m,
+                    cue_latency_compensation_distance_m=cue_latency_compensation_distance_m,
+                    track_length_m=config.track_length_m,
+                ),
                 "cue_tolerance_m": config.cue_tolerance_m,
                 "track_length_m": config.track_length_m,
+                "cue_latency_compensation_s": config.cue_latency_compensation_s,
+                "cue_latency_reference_speed_kph": cue_latency_reference_speed_kph,
+                "cue_latency_compensation_distance_m": cue_latency_compensation_distance_m,
                 "minimum_confidence_label": (
                     config.minimum_confidence_label or _confidence_label(row)
                 ),
@@ -185,6 +201,62 @@ def _planned_lift_start_m(
     return lift_start_m
 
 
+def _cue_latency_reference_speed_kph(
+    row: dict[str, object],
+    *,
+    config: LiveCuePlanConfig,
+) -> float | None:
+    for column_name in (
+        "cue_latency_reference_speed_kph",
+        "brake_start_speed_kph",
+        "mean_brake_start_speed_kph",
+        "baseline_mean_brake_start_speed_kph",
+        "approach_speed_kph",
+    ):
+        value = row.get(column_name)
+        if value is not None:
+            return float(value)
+    if config.cue_latency_reference_speed_kph is None:
+        return None
+    return float(config.cue_latency_reference_speed_kph)
+
+
+def _cue_latency_compensation_distance_m(
+    row: dict[str, object],
+    *,
+    config: LiveCuePlanConfig,
+    reference_speed_kph: float | None,
+) -> float:
+    if config.cue_latency_compensation_distance_m is not None:
+        return float(config.cue_latency_compensation_distance_m)
+    if config.cue_latency_compensation_s <= 0.0:
+        return 0.0
+    if reference_speed_kph is None:
+        zone_id = row.get("zone_id") or "<unknown>"
+        raise ValueError(
+            "cue latency compensation requires cue_latency_reference_speed_kph "
+            f"or a plan row speed for zone {zone_id}"
+        )
+    return (reference_speed_kph / 3.6) * float(config.cue_latency_compensation_s)
+
+
+def _cue_distance_m(
+    planned_lift_start_m: float,
+    *,
+    cue_latency_compensation_distance_m: float,
+    track_length_m: float | None,
+) -> float:
+    cue_distance_m = planned_lift_start_m - cue_latency_compensation_distance_m
+    if track_length_m is not None:
+        return cue_distance_m % track_length_m
+    if cue_distance_m < 0.0:
+        raise ValueError(
+            "cue latency compensation moves cue_distance_m before lap start "
+            "without track_length_m"
+        )
+    return cue_distance_m
+
+
 def _confidence_label(row: dict[str, object]) -> str:
     if row.get("model_status") == "model_ready":
         return "model_ready"
@@ -239,6 +311,9 @@ _LIVE_CUE_PLAN_COLUMNS = [
     "cue_distance_m",
     "cue_tolerance_m",
     "track_length_m",
+    "cue_latency_compensation_s",
+    "cue_latency_reference_speed_kph",
+    "cue_latency_compensation_distance_m",
     "minimum_confidence_label",
     "expected_fuel_saved_l",
     "expected_time_lost_s",
@@ -263,6 +338,9 @@ _LIVE_CUE_PLAN_SCHEMA = {
     "cue_distance_m": pl.Float64,
     "cue_tolerance_m": pl.Float64,
     "track_length_m": pl.Float64,
+    "cue_latency_compensation_s": pl.Float64,
+    "cue_latency_reference_speed_kph": pl.Float64,
+    "cue_latency_compensation_distance_m": pl.Float64,
     "minimum_confidence_label": pl.String,
     "expected_fuel_saved_l": pl.Float64,
     "expected_time_lost_s": pl.Float64,

@@ -197,6 +197,7 @@ def build_spa_v2_readiness_artifacts(
     track_zone_file: str | Path = "config/track_zones/spa_lmp2_zones.draft.json",
     driver_review_file: str | Path = "config/driver_reviews/spa_lmp2_v2_zone_review_2026-05-21.json",
     protocol_file: str | Path = "config/collection_protocols/spa_lmp2_v2_protocol.json",
+    live_cue_events_csv: str | Path | None = None,
     write_parquet: bool = True,
     zone_pass_config: ZonePassConfig | None = None,
     readiness_config: DataReadinessConfig | None = None,
@@ -221,11 +222,17 @@ def build_spa_v2_readiness_artifacts(
             else None
         ),
     )
+    live_cue_events = (
+        pl.read_csv(root / live_cue_events_csv)
+        if live_cue_events_csv is not None
+        else None
+    )
     readiness_paths = write_data_readiness_artifacts(
         zone_passes,
         protocol_file=root / protocol_file,
         zone_readiness_csv_path=output / "spa_lmp2_v2_zone_data_readiness.csv",
         protocol_readiness_csv_path=output / "spa_lmp2_v2_protocol_readiness.csv",
+        live_cue_events=live_cue_events,
         config=readiness_config,
     )
     return SpaV2ReadinessArtifactPaths(

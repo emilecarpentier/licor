@@ -1,8 +1,69 @@
 # LICOR Roadmap
 
 Use this roadmap as the main handoff document for future Codex sessions. Start
-new work from the first incomplete phase, keep edits small, and update this file
-when a phase changes meaningfully.
+new work from the first incomplete phase, keep edits small, and update this
+file whenever the strategy changes meaningfully.
+
+## Strategic Reset
+
+LICOR is no longer aiming for a simple sequence of:
+
+```text
+static offline optimizer -> live beep -> more data
+```
+
+The project has now reached a better architectural understanding:
+
+```text
+credible offline telemetry pipeline
+-> robust optimizer
+-> lap-by-lap adaptive replanning simulator
+-> live cue execution
+-> cross-circuit transfer with small calibration budgets
+```
+
+This shift matters because the final product cannot assume a race unfolds as the
+initial plan expected. The system must eventually react to what the driver
+actually does lap after lap: full-push openings, traffic, tire state changes,
+under-executed lifts, and changing fuel targets.
+
+Two rules now guide the project:
+
+1. keep the current Spa v2 production-style pipeline stable;
+2. test modeling and optimizer changes in isolated experimental files first.
+
+The current experimental branch lives under:
+
+```text
+src/licor/analysis/experimental_*
+src/licor/reports/experimental_*
+scripts/*_experimental.py
+data/processed/experimental/spa_dynamics_v1/
+```
+
+## Current Project State
+
+As of 2026-05-28, LICOR has:
+
+- a reproducible Spa telemetry pipeline from ingestion through static planning;
+- reviewed Spa candidate zones and validated zone boundaries for the current
+  optimization path;
+- a first strategy layer tied to observed pit telemetry and a 48-lap ELMS Spa
+  reference;
+- a live-cue export and replay scaffold;
+- a validated static LMU live cue loop with telemetry-linked cue logs;
+- a frozen `selected_zones_latency_v2` speed-aware live baseline that now
+  matches real pilot lift timing closely;
+- an isolated experimental dynamics branch that explains many suspicious
+  optimizer shapes better than the original one-dimensional view;
+- an experimental reclassification branch where `T01`, `T08`, and `T12-T13`
+  are promoted to experimental `model_ready`, `T14` is treated as
+  `micro_lico_only`, and the static fuel target becomes reachable without
+  depending on `T14`.
+
+The current bottleneck is no longer raw telemetry processing or static live cue
+timing. It is adaptive replanning credibility and the bridge from offline
+between-lap logic into live operation.
 
 ## Phase 0: Project Foundation
 
@@ -19,25 +80,19 @@ Status: complete.
 
 ## Phase 1: First Controlled Spa Dataset
 
-Status: lap summary pipeline complete.
+Status: complete.
 
 - [x] Keep raw telemetry files outside Git.
 - [x] Add a dataset log for controlled runs.
-- [x] Convert `docs/dataset_log.md` into a machine-readable label file if needed.
+- [x] Convert `docs/dataset_log.md` into a machine-readable label file.
 - [x] Load multiple LMU telemetry files from a local folder.
 - [x] Extract lap intervals and filter out-laps/warm-up laps.
-- [x] Produce a lap summary table with fuel usage and basic validation metrics.
+- [x] Produce a lap summary table with fuel usage and validation metrics.
 - [x] Add tests for lap summary and valid-lap filtering.
 
-Recommended next Codex task:
-
-```text
-Update the Spa learning loop: add marginal/sensitivity diagnostics, define a
-new controlled-random and targeted data collection protocol, then prepare a
-minimal live audio-cue validation path.
-```
-
 ## Phase 2: Braking And LICO Detection
+
+Status: complete for the current optimization path.
 
 - [x] Detect braking zones from `Brake Pos`.
 - [x] Merge nearby braking segments into meaningful corners/zones.
@@ -47,17 +102,6 @@ minimal live audio-cue validation path.
 - [x] Detect throttle lift before braking zones.
 - [x] Associate candidate LICO zones with lap distance and braking point.
 - [x] Add tests for brake segment detection and segment merging.
-
-Phase 2 closeout note:
-
-```text
-Driver-reviewed candidate zones are complete for Phase 3. Spa T19 remains an
-incomplete validation-only non-candidate for the second Bus Stop brake pressure;
-it is intentionally excluded from the current optimization pipeline.
-```
-
-Implementation note:
-
 - [x] Add an editable track-zone config schema and draft Spa zone file.
 - [x] Add tests for track-zone loading and validation.
 - [x] Add proposal logic for brake references and LICO window starts.
@@ -67,70 +111,77 @@ Implementation note:
   validation endings for LICO candidate zones.
 - [ ] Decide whether to add complete validation-only boundaries for Spa T19.
 
-## Phase 3: Cost/Benefit Analysis
+Notes:
+
+- Spa `T19` remains an intentional non-candidate in the current optimization
+  pipeline.
+- The unresolved `T19` boundary question is low priority relative to the
+  modeling and optimizer work below.
+
+## Phase 3: First Zone Cost/Benefit Pipeline
+
+Status: complete for the first-generation static model.
 
 - [x] Compare push and LICO behavior by track zone.
 - [x] Estimate fuel saved and local time lost by zone.
-- [x] Convert `none`, `low`, `medium`, and `high` collection labels into continuous
-  telemetry measurements such as lift distance and lift duration.
+- [x] Convert `none`, `low`, `medium`, and `high` collection labels into
+  continuous telemetry measurements such as lift distance and lift duration.
 - [x] Fit initial smooth zone-level cost/benefit curves.
 - [x] Rank zones by fuel saved per second lost.
 - [x] Let the driver review and correct zone interpretation.
 - [x] Treat full-lap deltas as sanity checks, not objective functions.
-
-Implementation note:
-
-- [x] Add a first `zone_pass` extraction table from driver-reviewed track zones.
+- [x] Add a first `zone_pass` extraction table from driver-reviewed track
+  zones.
 - [x] Add synthetic tests for push, LICO, skipped zones, and incomplete zone
   coverage.
 - [x] Add a first zone-level cost summary from `zone_pass` observations.
 - [x] Add descriptive zone curve points and distance-binned curve tables before
   fitting a formal continuous model.
-- [x] Add driver review annotations for lap-zone exclusions and zone signal tags.
+- [x] Add driver review annotations for lap-zone exclusions and zone signal
+  tags.
 - [x] Add targeted throttle/brake/speed zone telemetry reports for curve
   anomalies.
-- [x] Add zone-start zero-throttle diagnostics and apply the T08 driver-reviewed
-  start adjustment.
+- [x] Add zone-start zero-throttle diagnostics and apply the T08
+  driver-reviewed start adjustment.
 - [x] Make zone-pass LICO start robust to isolated throttle artifacts before the
   true zero-input coast phase.
 - [x] Add first piecewise-linear zone models from binned curve observations.
 - [x] Add a full-lap sanity table comparing global lap deltas with summed
   observed zone deltas.
 
-## Phase 4: Pit Stops And Race Strategy
+## Phase 4: Pit Stops And Static Race Strategy
+
+Status: complete for the first-generation static strategy layer.
 
 - [x] Load dedicated pit stop telemetry files.
-- [x] Detect pit entry, pit exit, speed limiter on/off, stationary time, and refill
-  windows.
+- [x] Detect pit entry, pit exit, speed limiter on/off, stationary time, and
+  refill windows.
 - [x] Estimate observed refill rate and pit lane commitment time.
 - [x] Compare telemetry-derived refill rate with configurable LMU/rules values.
-- [x] Compare full-push stop count versus LICO-enabled stop count for a race length.
+- [x] Compare full-push stop count versus LICO-enabled stop count for a race
+  length.
 - [x] Compute the fuel saving target required to avoid an extra stop.
-
-Implementation note:
-
-- [x] Add a first `pit_stop_observation` extraction table from dedicated pit stop
-  telemetry.
+- [x] Add a first `pit_stop_observation` extraction table from dedicated pit
+  stop telemetry.
 - [x] Add synthetic tests for pit state intervals, limiter windows, stationary
   windows, refill windows, missing refill handling, and initial out-lap pit
   state filtering.
-- [x] Add first race-strategy helpers for race lap count, stop count, fuel-saving
-  targets, and full-push versus LICO scenario comparisons.
+- [x] Add first race-strategy helpers for race lap count, stop count,
+  fuel-saving targets, and full-push versus LICO scenario comparisons.
 - [x] Generate first Spa strategy CSVs from observed full-lap fuel deltas and
   measured pit/refill telemetry.
 - [x] Add a race-lap override for championship-observed distances such as the
   Spa ELMS split result of 48 laps.
-- [x] Add a first conservative zone-level optimizer that uses only `model_ready`
-  points and reports when the fuel target is unreachable.
+- [x] Add a first conservative zone-level optimizer that uses only
+  `model_ready` points and reports when the fuel target is unreachable.
 - [x] Add editable driver strategy priors and a driver-prior optimizer mode for
   feasible-but-diagnostic LICO zones.
 - [x] Generate Spa conservative and driver-prior zone-level plans for the
   48-lap one-stop fuel target.
 
-## Phase 5: Reports And App
+## Phase 5: Reports, Metadata, And Execution Scaffolding
 
-Status: re-scoped. Reports remain next; Streamlit should wait until the
-recommendation loop is credible.
+Status: mostly complete. This phase is no longer the main bottleneck.
 
 - [x] Add marginal fuel/time efficiency diagnostics for each zone model.
 - [x] Add sensitivity reports for optimizer plans, including best-ratio caps,
@@ -139,7 +190,7 @@ recommendation loop is credible.
   targeted zone variation, and recommendation-execution runs.
 - [x] Add Spa v2 data-readiness summaries for zone coverage and protocol
   coverage before refitting curves.
-- [x] Persist current Spa zone-pass and Spa v2 readiness CSV/parquet artifacts.
+- [x] Persist current Spa zone-pass and Spa v2 readiness artifacts.
 - [x] Add a Spa v2 run-metadata ingestion contract and validation layer so
   future non-labelled runs can link to collection protocols before telemetry
   processing.
@@ -153,41 +204,241 @@ recommendation loop is credible.
 - [x] Build a minimal live-cue trigger/logging prototype that consumes an
   exported plan and logs cue timing accuracy.
 - [x] Add an injectable replay/audio wrapper around the tested live-cue runner.
-- [ ] Validate the real audio adapter against LMU telemetry during a driving
-  session.
-- [x] Generate Plotly charts for speed, throttle, brake, fuel, and lap distance.
+- [x] Generate Plotly charts for speed, throttle, brake, fuel, and lap
+  distance.
 - [x] Generate zone-level comparison reports.
+- [x] Validate the real audio adapter against LMU telemetry during a driving
+  session.
+- [x] Add a first Windows LMU shared-memory static cue runner plus a local
+  preflight doctor/bench CLI.
 - [ ] Build a simple Streamlit dashboard around the tested analysis functions
-  after offline reports and live-cue validation are useful.
+  after the adaptive recommendation loop is credible.
 - [ ] Keep analysis logic out of the app layer.
 
-## Phase 6: Modeling And Generalization
+Notes:
+
+- Real audio validation is now intentionally blocked by the next phases.
+- Streamlit remains deferred on purpose.
+
+## Phase 6: Experimental Spa Dynamics Branch
+
+Status: complete for the first experimental dynamics branch.
+
+Goal: explain suspicious optimizer behavior by modeling the causal chain between
+LICO distance, entry dynamics, corner adaptation, and local time cost.
+
+- [x] Build an isolated experimental zone dynamics table with braking, apex,
+  exit, brake-shape, stint, and tire-context features.
+- [x] Compare direct 1D local-time models versus dynamics-aware models.
+- [x] Generate a technical dynamics report plus a simplified driver-review
+  report.
+- [x] Add an experimental reclassification layer that preserves both the base
+  and experimental zone status.
+- [x] Promote `T01`, `T08`, and `T12-T13` to experimental `model_ready`.
+- [x] Reclassify `T14` as `micro_lico_only` with an explicit distance cap.
+- [x] Show that the static fuel target can be reached in the experimental branch
+  without requiring `T14`.
+
+Deliverable of this phase:
+
+```text
+A robust offline optimizer artifact that prefers credible, well-supported
+recommendations over fragile mathematical edge optima.
+```
+
+## Phase 7: Robust Optimization
+
+Status: complete for the first robust optimizer artifact.
+
+Goal: replace fragile single-point selection with a support-aware optimizer.
+
+- [x] Define optimizer-facing support metrics per zone point, such as local data
+  density, distance to nearest observed point, residual variance, and
+  disagreement between simple and dynamics-aware views.
+- [x] Add robust scoring that penalizes edge-of-surface points and weak support.
+- [x] Output recommended LICO ranges or credible intervals, not only a single
+  point estimate.
+- [x] Compare static naive plans against robust plans on Spa.
+- [x] Preserve rollback by keeping the robust optimizer experimental until it is
+  clearly better.
+
+Success criteria:
+
+- extreme points like `T12-T13 = 150 m` lose attractiveness naturally when
+  support is weak;
+- the optimizer still reaches the fuel target without collapsing into overly
+  conservative behavior;
+- the output is more interpretable for a human driver than a single brittle
+  optimum.
+
+Notes:
+
+- The robust artifact now includes `selected_zones` and `all_eligible_zones`
+  range-aware variants.
+- Stable-pipeline migration is still deferred; experimental adoption remains a
+  separate decision after more adaptive validation.
+
+## Phase 8: Adaptive Lap-By-Lap Replanning Simulator
+
+Status: in progress. This phase now comes before real live-cue validation.
+
+Goal: simulate a race that diverges from the initial plan and update the next
+lap's LICO demand accordingly.
+
+- [x] Define a first race-state representation with remaining laps, remaining
+  fuel target, recent execution quality, recent fuel delta, and scenario-event
+  context.
+- [x] Build a first lap-by-lap simulator that consumes an experimental plan plus
+  simulated execution history.
+- [x] Reuse the replay/live `planned vs executed` schema in an offline observed
+  execution mode, so replanning can be audited against real run history before
+  a live telemetry loop is introduced.
+- [x] Add a first lap-level race-state context from existing telemetry, with
+  fuel-load bands, stint phase, and coarse tire-regime labels.
+- [x] Prototype a first bounded `fuel_load_band` conditioning layer, then park
+  it as audit-only until stronger evidence exists.
+- [x] Export an observed context-effects summary by fuel-load band and thermal
+  regime so those priors can be checked against replayed execution residuals.
+- [x] Add a first execution-calibration layer so adaptive replanning can react
+  to recent `planned vs executed` fuel/time outcomes from the driver.
+- [x] Refine execution calibration with recent zone-specific memory so adaptive
+  replanning can distinguish between globally weak execution and a specific
+  zone that the driver is consistently missing or over-performing.
+- [x] Export a validation-oriented next-lap handoff preview so the adaptive
+  controller can be reviewed in a live-cue-shaped table before true live
+  validation.
+- [x] Convert adaptive next-lap handoffs back into replay-ready `live_cue_plan`
+  rows and validate them against recorded next-lap telemetry.
+- [x] Recompute the next-lap target after each lap.
+- [ ] Support scenarios such as:
+  - [x] opening laps full push for position;
+  - [x] under-executed or missed LICO cues;
+  - [x] over-executed LICO;
+  - [ ] hotter or cooler tire-state regimes;
+  - [x] traffic or non-ideal laps.
+- [x] Export per-lap recommended zone usage from the replanner.
+- [x] Compare static-plan outcomes against adaptive outcomes on Spa.
+
+Deliverable of this phase:
+
+```text
+An offline controller-like simulator that can say what the next lap should do
+after the previous laps changed the fuel/time situation, first from scripted
+disturbances, then from observed planned-vs-executed replay logs, while also
+surfacing first-order race-state context such as fuel load and tire regime.
+```
+
+Notes:
+
+- Fuel-load context is currently exported and audited, but no longer has
+  default decision authority in the replanner.
+- Adaptive authority now comes first from recent `planned vs executed`
+  calibration rather than from weak fuel/tire priors.
+- The execution-calibration layer now has a v2 zone-memory path in the
+  experimental branch, so future live validation can inspect both global and
+  per-zone adaptation signals.
+- The observed replanner now exports both a zone-calibration summary and a
+  next-lap handoff preview to support a cleaner transition into live testing.
+- The experimental branch now also emits a concrete replay-validation loop:
+  adaptive next-lap handoffs become `live_cue_plan` rows, are replayed through
+  the existing cue runner on the recorded next lap, and are summarized at both
+  handoff and zone level.
+- Replay handoffs now follow the actual next observed lap in sequence, not only
+  `lap_number + 1`, so runs with excluded or missing laps stay connected.
+- Tire regime is still exported and reviewed, but without tire-wear telemetry
+  it remains an audit variable rather than a decision authority in the
+  replanner.
+
+## Phase 9: Adaptive Live Cue Validation
+
+Status: in progress for the static live baseline and the first guarded
+operator-preview adaptive follow-up; true adaptive between-lap live handoff
+still pending.
+
+Goal: validate the real execution loop only after the offline planner and
+replanner are trustworthy enough to deserve track-time validation.
+
+- [x] Freeze `selected_zones_latency_v2` as the current static-live baseline
+  after telemetry-enabled validation.
+- [x] Publish the first Spa pilot live-validation protocol and export frozen
+  candidate plan CSVs for `range_aware_selected_zones` and
+  `range_aware_all_eligible_zones`.
+- [x] Add an operator-facing pack generator plus a replay/beep CLI so the
+  first pilot session can start from frozen artifacts instead of ad hoc file
+  handling.
+- [x] Add a first static LMU live-session runner that consumes a frozen plan and
+  writes cue event logs during real driving.
+- [x] Feed adaptive next-lap plans, not only static plans, into the live cue
+  replay layer.
+- [x] Log planned versus executed lift points, misses, and late/early cues.
+- [x] Connect replay validation and real-session validation to the same schema.
+- [ ] Use execution logs as new evidence for later model updates.
+- [x] Run adaptive between-lap recommendations in shadow mode during a real
+  static baseline session before letting them change the next live lap.
+- [x] Export the first guarded operator-preview adaptive follow-up plan from the
+  validated static live baseline session.
+- [x] Publish an operator-facing adaptive handoff preview playbook for the next
+  live data-collection block.
+- [ ] Promote the shadow adaptive controller into a true between-lap live
+  handoff only after it stays stable and readable.
+
+Notes:
+
+- Live cue is now a validation layer for the adaptive system, not the center of
+  the methodology.
+- `selected_zones_latency_v2` is the frozen operator baseline.
+- `all_eligible_latency_v2` remains a comparison-only variant until adaptive
+  evidence proves it is worth carrying in live use.
+- The branch now emits a dedicated shadow adaptive artifact set from the frozen
+  baseline session, including static-versus-adaptive next-lap deltas and a
+  replay check on the actual next observed lap.
+- The first operator-facing protocol lives in
+  `docs/spa_adaptive_live_validation_protocol.md`.
+- The first guarded operator-preview follow-up playbook lives in
+  `docs/spa_adaptive_handoff_preview_playbook.md`.
+- Generated pilot packs live under
+  `data/processed/experimental/spa_dynamics_v1/live_validation_packs/`.
+- The project should avoid spending large data-collection effort on live testing
+  before the adaptive offline logic behaves credibly.
+
+## Phase 10: Cross-Circuit Transfer And Low-Data Adaptation
+
+Status: not started.
+
+Goal: move from Spa-specific methodology to a reusable cross-circuit system that
+can bootstrap from very small circuit-specific samples.
 
 - [ ] Use Spa as the first calibration and methodology dataset.
-- [ ] Replace first piecewise curves with robust continuous models once Spa v2
-  data is available.
-- [ ] Model uncertainty so recommendations can distinguish high-confidence
-  zones from extrapolated or weakly supported zones.
+- [ ] Replace first piecewise curves with more robust continuous models only
+  after the optimizer and replanner objectives are well specified.
+- [ ] Model uncertainty so recommendations distinguish high-confidence zones
+  from weakly supported or extrapolated ones.
 - [ ] Learn reusable zone priors from Spa, such as relationships between
-  approach speed, braking severity, straight length, corner type, LICO distance,
-  fuel saved, and local time lost.
+  approach speed, braking severity, straight length, corner type, LICO
+  distance, fuel saved, local time lost, and adaptation sensitivity.
 - [ ] Add automatic candidate-zone proposal for new circuits from mostly push
   laps, using braking events, approach geometry/proxies, and reusable priors.
-- [ ] Test the pipeline on another circuit with a small calibration budget:
-  mostly push laps plus a limited number of varied LICO laps, not a full manual
-  50-lap rebuild.
+- [ ] Support small calibration budgets on new circuits: mostly push laps plus
+  a limited number of varied LICO laps, not a full manual rebuild.
+- [ ] Let the online replanner adapt those priors quickly from the driver's real
+  execution and race context.
 - [ ] Keep a manual review fallback for zones whose telemetry shape is outside
   the Spa-learned distribution.
-- [ ] Add lightweight statistical models only after transparent heuristic
-  outputs are credible.
-- [ ] Prefer continuous models such as splines, Gaussian processes, or hierarchical
-  Bayesian models over classification of LICO intensity labels.
+- [ ] Add lightweight statistical or Bayesian models only after the heuristic
+  and experimental outputs are credible.
+
+Notes:
+
+- The project should not promise that `2-5` laps are always enough on every new
+  circuit. The target is fast adaptation, not magic.
+- The long-term goal is to reduce circuit-by-circuit manual review to a small
+  number of ambiguous zones rather than remove human validation entirely.
 
 ## Current Data Readiness
 
-The current local dataset is enough to start implementation:
+Current local telemetry assets:
 
-- `none`: push baseline;
+- `none`: initial push baseline;
 - `low`: low LICO sample;
 - `medium`: medium LICO sample;
 - `high`: high LICO sample;
@@ -195,22 +446,19 @@ The current local dataset is enough to start implementation:
 - `baseline` refresh: two metadata-linked Spa v2 push-baseline runs;
 - `controlled_random`: four metadata-linked Spa v2 runs.
 
-The first reproducible Spa pipeline now exists. Future Spa data should move away
-from broad `none`/`low`/`medium`/`high` labels and toward:
+Current interpretation:
 
-- controlled-random LICO runs that vary lift distances across zones to fill the
-  continuous curve;
-- targeted zone runs that break correlations between zones, but only after
-  post-refit diagnostics show that controlled-random coverage is still
-  insufficient;
-- recommendation-execution runs once an audio cue can tell the driver where to
-  lift and log whether the plan was followed.
+- the stable Spa pipeline is good enough for first-generation static planning;
+- the experimental branch is good enough to justify deeper optimizer work;
+- new targeted data is no longer the automatic next step;
+- future data collection should be driven by robust-optimizer and replanning
+  diagnostics, not by broad intuition alone.
 
-Recommended next step after integrating the first four Spa v2 controlled-random runs:
+## Recommended Next Codex Task
 
 ```text
-Refit the zone curves and optimizer plans from the integrated Spa v2 dataset,
-audit which zones remain noisy or weakly supported, and then decide whether a
-small targeted-zone pass is still worth the time before moving to
-recommendation-execution validation.
+Use the frozen guarded adaptive follow-up pack as the next live collection
+block, capture several clean scored laps plus operator notes, then re-evaluate
+whether adaptive between-lap handoffs remain stable enough to leave pure shadow
+mode.
 ```

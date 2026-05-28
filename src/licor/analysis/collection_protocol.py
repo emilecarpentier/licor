@@ -74,6 +74,7 @@ class CollectionProtocol(BaseModel):
     track_name: str
     car_class: str
     purpose: str
+    required_run_metadata: tuple[str, ...] = Field(default_factory=tuple)
     sessions: list[CollectionProtocolSession] = Field(default_factory=list)
 
     @model_validator(mode="before")

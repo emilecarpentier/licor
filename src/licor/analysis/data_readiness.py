@@ -224,9 +224,13 @@ def _protocol_session_readiness_row(
     observed_clean_laps = _unique_lap_count(matching)
     observed_runs = _unique_run_count(matching)
     observed_target_zones = _unique_strings(matching, "zone_id")
-    observed_cue_event_count = _matching_cue_event_count(
+    expected_audio_cue_plan_ids = _expected_audio_cue_plan_ids(matching)
+    expected_run_ids = _unique_strings(matching, "run_id")
+    observed_cue_event_count, cue_link_flags = _matching_cue_event_count(
         live_cue_events,
         collection_design=collection_design,
+        expected_audio_cue_plan_ids=expected_audio_cue_plan_ids,
+        expected_run_ids=expected_run_ids,
     )
     flags = []
     if matching.is_empty():
@@ -241,11 +245,19 @@ def _protocol_session_readiness_row(
     if collection_design == "recommendation_execution":
         if session.get("target_zones_source") == "from_exported_plan":
             flags.append("requires_exported_plan_targets")
+        if not expected_audio_cue_plan_ids:
+            flags.append("missing_audio_cue_plan_id")
+        flags.extend(cue_link_flags)
         if observed_cue_event_count == 0:
             flags.append("missing_cue_event_logs")
         readiness_status = (
             "complete"
-            if observed_clean_laps >= minimum_clean_laps and observed_cue_event_count > 0
+            if (
+                observed_clean_laps >= minimum_clean_laps
+                and observed_cue_event_count > 0
+                and expected_audio_cue_plan_ids
+                and not cue_link_flags
+            )
             else "needs_plan_or_execution_logs"
         )
 
@@ -404,12 +416,32 @@ def _matching_cue_event_count(
     live_cue_events: pl.DataFrame | None,
     *,
     collection_design: str,
-) -> int:
+    expected_audio_cue_plan_ids: list[str],
+    expected_run_ids: list[str],
+) -> tuple[int, list[str]]:
     if collection_design != "recommendation_execution":
-        return 0
+        return 0, []
     if live_cue_events is None or live_cue_events.is_empty():
-        return 0
-    return live_cue_events.height
+        return 0, []
+    flags = []
+    frame = live_cue_events
+    if expected_audio_cue_plan_ids:
+        if "plan_id" not in frame.columns:
+            return 0, ["cue_logs_missing_plan_id"]
+        frame = frame.filter(pl.col("plan_id").is_in(expected_audio_cue_plan_ids))
+        if frame.is_empty():
+            return 0, ["cue_logs_do_not_match_audio_cue_plan_id"]
+    if expected_run_ids and "run_id" in frame.columns:
+        frame = frame.filter(pl.col("run_id").is_in(expected_run_ids))
+        if frame.is_empty():
+            return 0, ["cue_logs_do_not_match_run_id"]
+    return frame.height, flags
+
+
+def _expected_audio_cue_plan_ids(frame: pl.DataFrame) -> list[str]:
+    if frame.is_empty() or "audio_cue_plan_id" not in frame.columns:
+        return []
+    return _non_empty_unique_strings(frame, "audio_cue_plan_id")
 
 
 def _unique_run_count(frame: pl.DataFrame) -> int:

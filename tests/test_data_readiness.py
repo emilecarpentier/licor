@@ -214,6 +214,7 @@ def test_recommendation_execution_requires_cue_logs_even_with_zone_passes():
                 "unknown",
                 True,
                 90.0,
+                audio_cue_plan_id="plan_v1",
             ),
             _zone_pass_row(
                 "spa_t05_t06",
@@ -224,6 +225,7 @@ def test_recommendation_execution_requires_cue_logs_even_with_zone_passes():
                 "unknown",
                 True,
                 95.0,
+                audio_cue_plan_id="plan_v1",
             ),
         ]
     )
@@ -243,6 +245,54 @@ def test_recommendation_execution_requires_cue_logs_even_with_zone_passes():
 
 
 def test_recommendation_execution_can_complete_with_cue_logs():
+    recommendation_passes = pl.DataFrame(
+        [
+            _zone_pass_row(
+                "spa_t05_t06",
+                "T05-T06",
+                "recommendation",
+                1,
+                "recommendation_execution",
+                "unknown",
+                True,
+                90.0,
+                audio_cue_plan_id="plan_v1",
+            ),
+            _zone_pass_row(
+                "spa_t05_t06",
+                "T05-T06",
+                "recommendation",
+                2,
+                "recommendation_execution",
+                "unknown",
+                True,
+                95.0,
+                audio_cue_plan_id="plan_v1",
+            ),
+        ]
+    )
+    recommendation_session = _protocol_sessions().filter(
+        pl.col("collection_design") == "recommendation_execution"
+    )
+    cue_events = pl.DataFrame(
+        [
+            {"plan_id": "plan_v1", "zone_id": "spa_t05_t06"},
+            {"plan_id": "plan_v1", "zone_id": "spa_t05_t06"},
+        ]
+    )
+
+    row = summarize_collection_protocol_readiness(
+        recommendation_passes,
+        recommendation_session,
+        live_cue_events=cue_events,
+    ).row(0, named=True)
+
+    assert row["readiness_status"] == "complete"
+    assert row["observed_cue_event_count"] == 2
+    assert "missing_cue_event_logs" not in row["readiness_flags"]
+
+
+def test_recommendation_execution_requires_audio_cue_plan_id_link():
     recommendation_passes = pl.DataFrame(
         [
             _zone_pass_row(
@@ -283,9 +333,56 @@ def test_recommendation_execution_can_complete_with_cue_logs():
         live_cue_events=cue_events,
     ).row(0, named=True)
 
-    assert row["readiness_status"] == "complete"
-    assert row["observed_cue_event_count"] == 2
-    assert "missing_cue_event_logs" not in row["readiness_flags"]
+    assert row["readiness_status"] == "needs_plan_or_execution_logs"
+    assert "missing_audio_cue_plan_id" in row["readiness_flags"]
+
+
+def test_recommendation_execution_rejects_mismatched_cue_log_plan_id():
+    recommendation_passes = pl.DataFrame(
+        [
+            _zone_pass_row(
+                "spa_t05_t06",
+                "T05-T06",
+                "recommendation",
+                1,
+                "recommendation_execution",
+                "unknown",
+                True,
+                90.0,
+                audio_cue_plan_id="plan_expected",
+            ),
+            _zone_pass_row(
+                "spa_t05_t06",
+                "T05-T06",
+                "recommendation",
+                2,
+                "recommendation_execution",
+                "unknown",
+                True,
+                95.0,
+                audio_cue_plan_id="plan_expected",
+            ),
+        ]
+    )
+    recommendation_session = _protocol_sessions().filter(
+        pl.col("collection_design") == "recommendation_execution"
+    )
+    cue_events = pl.DataFrame(
+        [
+            {"plan_id": "plan_other", "zone_id": "spa_t05_t06"},
+            {"plan_id": "plan_other", "zone_id": "spa_t05_t06"},
+        ]
+    )
+
+    row = summarize_collection_protocol_readiness(
+        recommendation_passes,
+        recommendation_session,
+        live_cue_events=cue_events,
+    ).row(0, named=True)
+
+    assert row["readiness_status"] == "needs_plan_or_execution_logs"
+    assert row["observed_cue_event_count"] == 0
+    assert "cue_logs_do_not_match_audio_cue_plan_id" in row["readiness_flags"]
 
 
 def test_protocol_readiness_reports_unlinked_metadata_for_new_designs():
@@ -429,6 +526,7 @@ def _zone_pass_row(
     lico_distance_m: float | None,
     *,
     validity_label: str = "valid",
+    audio_cue_plan_id: str = "",
 ) -> dict[str, object]:
     return {
         "file_name": f"{run_id}.duckdb",
@@ -439,6 +537,7 @@ def _zone_pass_row(
         "lico_intensity": lico_intensity,
         "collection_design": collection_design,
         "execution_quality": "clean",
+        "audio_cue_plan_id": audio_cue_plan_id,
         "has_lico": has_lico,
         "lico_start_distance_before_brake_m": lico_distance_m,
         "validity_label": validity_label,
@@ -454,6 +553,7 @@ _ZONE_PASS_SCHEMA = {
     "lico_intensity": pl.String,
     "collection_design": pl.String,
     "execution_quality": pl.String,
+    "audio_cue_plan_id": pl.String,
     "has_lico": pl.Boolean,
     "lico_start_distance_before_brake_m": pl.Float64,
     "validity_label": pl.String,

@@ -325,6 +325,42 @@ The current v2 sidecar now includes two new baseline refresh runs and four
 - Notes: a light wall touch before Eau Rouge on lap 50 was reviewed and kept as
   non-contaminating.
 
+#### Recommendation Execution Selected 01
+
+- File:
+  `C:/Program Files (x86)/Steam/steamapps/common/Le Mans Ultimate/UserData/Telemetry/Circuit de Spa-Francorchamps_P_2026-05-27T03_18_06Z.duckdb`
+- Run id: `recommendation_execution_selected_01`
+- Collection design: `recommendation_execution`
+- Planned profile: `spa_exp_live_candidate_selected_v1`
+- Audio cue plan id:
+  `experimental_live_candidate_range_aware_selected_zones_v1`
+- Valid laps: `2, 3, 4, 5, 6`
+- Context laps: `1`
+- Excluded laps: `0`
+- Notes: first real live-cue Candidate A validation. Driver debrief reported
+  that all active zones felt natural and correctly timed and would be marked
+  `N` across the board. No per-lap note sheet was transcribed during the
+  session, so the intake stores the verdict as session-level review input.
+
+#### Recommendation Execution Selected Latency V2 02
+
+- File:
+  `C:/Program Files (x86)/Steam/steamapps/common/Le Mans Ultimate/UserData/Telemetry/Circuit de Spa-Francorchamps_P_2026-05-28T01_48_35Z.duckdb`
+- Run id: `recommendation_execution_selected_latency_v2_02`
+- Collection design: `recommendation_execution`
+- Planned profile: `spa_exp_live_candidate_selected_latency_v2`
+- Audio cue plan id:
+  `experimental_live_candidate_range_aware_selected_zones_latency_v2`
+- Valid laps: `8, 9`
+- Excluded laps: `7`
+- Notes: telemetry-enabled confirmation run for the speed-aware selected-zones
+  latency v2 plan. Lap 7 is excluded because it still contains the initial
+  in-pits/shared-memory attachment context. The planned-versus-executed review
+  on laps 8-9 shows near-zero mean distance error across the active zones, so
+  this run freezes `selected_zones_latency_v2` as the current live baseline.
+  Lap notes and zone signoff were not fully transcribed, so the run should be
+  read as strong plan-execution evidence rather than a deep workload study.
+
 Current interpretation after four Spa v2 `controlled_random` runs:
 
 - controlled-random coverage is now strong enough to refit Spa zone curves
@@ -332,6 +368,8 @@ Current interpretation after four Spa v2 `controlled_random` runs:
 - targeted-zone runs are no longer the default next step and should be used
   only if post-refit diagnostics still show weak bins, unstable optimizer
   choices, or zone-boundary uncertainty;
+- the speed-aware static live cue layer is now credible enough to act as the
+  live baseline for future adaptive work;
 - recommendation-execution runs now matter more than additional random
   collection if the refit produces a credible plan that can be replayed or
   executed with live cues.

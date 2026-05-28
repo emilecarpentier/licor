@@ -1022,8 +1022,10 @@ versioned export contract:
   `brake_reference_m - selected_lico_distance_m`;
 - when a `track_length_m` is provided, lift-start distance wraps around the lap
   start using modulo track length;
-- `cue_distance_m` currently equals `planned_lift_start_m`, leaving room for
-  future latency compensation without changing the plan anchor;
+- `cue_distance_m` is the actual trigger point for the beep and may be earlier
+  than `planned_lift_start_m` when cue latency compensation is configured;
+- `planned_lift_start_m` remains the intended lift anchor even when the cue is
+  advanced to compensate for human reaction time and system latency;
 - only selected LICO zones are exported by default;
 - missing `brake_reference_m` for a selected zone is an error, because a live
   cue plan cannot safely invent the driver reference point.
