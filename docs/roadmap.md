@@ -400,10 +400,20 @@ Notes:
   `data/processed/experimental/spa_dynamics_v1/live_validation_packs/`.
 - The project should avoid spending large data-collection effort on live testing
   before the adaptive offline logic behaves credibly.
+- Session-level cue-latency adaptation remains a documented future live-polish
+  idea, not the next project bottleneck. The current `selected_zones_latency_v2`
+  speed-aware baseline is good enough to support the next transfer-oriented
+  phase.
+- Future latency calibration should learn only from reliable observed
+  cue-to-lift timing, explicitly excluding missed-audio laps, obvious cue
+  perception failures, and other operator-noise outliers.
+- That future layer should adjust `cue_distance_m` only on top of the current
+  speed-aware baseline. It should not rewrite `planned_lift_start_m`, zone
+  selection, or the between-lap adaptive fuel/time recommendation.
 
 ## Phase 10: Cross-Circuit Transfer And Low-Data Adaptation
 
-Status: not started.
+Status: design-started.
 
 Goal: move from Spa-specific methodology to a reusable cross-circuit system that
 can bootstrap from very small circuit-specific samples.
@@ -427,12 +437,45 @@ can bootstrap from very small circuit-specific samples.
 - [ ] Add lightweight statistical or Bayesian models only after the heuristic
   and experimental outputs are credible.
 
+### Phase 10a: Transfer Pilot Design
+
+Status: in progress.
+
+Goal: define the smallest believable workflow for a first non-Spa bootstrap
+attempt before implementing new-circuit code paths.
+
+- [x] Decide that future live reaction-time adaptation should stay deferred and
+  documented, rather than delaying the transfer-oriented work.
+- [ ] Define a transferable zone-prior schema that separates:
+  - geometry and approach descriptors that can travel across circuits;
+  - Spa-derived expectation ranges for fuel, time, and execution sensitivity;
+  - uncertainty/support signals that determine when manual review is still
+    required.
+- [x] Add the first conservative transferable-archetype layer that can
+  materialize a circuit-local `StrategyPriorTable` from a reviewed
+  `TrackZoneTable` without changing the optimizer contract.
+- [ ] Define the first new-circuit bootstrap workflow:
+  - push-baseline laps;
+  - automatic candidate-zone proposal;
+  - low-budget varied-LICO calibration;
+  - human review only on ambiguous or out-of-distribution zones.
+- [ ] Define the metadata and artifact contract for transfer runs so provenance
+  survives through `zone_pass`, planning, replay, and live review outputs.
+- [x] Add the first transfer-bootstrap provenance table and readiness checklist
+  so circuit-local priors can be audited before any new-circuit collection.
+- [ ] Define the first evaluation protocol comparing:
+  - transfer-assisted bootstrap;
+  - no-prior bootstrap;
+  - manual-from-scratch fallback.
+
 Notes:
 
 - The project should not promise that `2-5` laps are always enough on every new
   circuit. The target is fast adaptation, not magic.
 - The long-term goal is to reduce circuit-by-circuit manual review to a small
   number of ambiguous zones rather than remove human validation entirely.
+- The concrete design for this phase now lives in
+  `docs/cross_circuit_transfer_v1.md`.
 
 ## Current Data Readiness
 
@@ -457,8 +500,9 @@ Current interpretation:
 ## Recommended Next Codex Task
 
 ```text
-Use the frozen guarded adaptive follow-up pack as the next live collection
-block, capture several clean scored laps plus operator notes, then re-evaluate
-whether adaptive between-lap handoffs remain stable enough to leave pure shadow
-mode.
+Use `docs/cross_circuit_transfer_v1.md` to define the first transfer-ready
+prior schema, bootstrap workflow, and evaluation contract before writing
+new-circuit implementation code. Keep `selected_zones_latency_v2` as the live
+baseline while that design work happens, and treat adaptive reaction-time
+calibration as a later live-polish backlog item.
 ```

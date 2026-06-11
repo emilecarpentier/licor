@@ -90,7 +90,8 @@ def build_fuel_saving_targets(*, config: RaceStrategyConfig) -> pl.DataFrame:
     rows = []
     for target_stop_count in range(baseline_stops + 1):
         available_fuel_l = config.tank_capacity_l * (target_stop_count + 1)
-        target_fuel_per_lap_l = available_fuel_l / race_laps
+        required_longest_stint_laps = math.ceil(race_laps / (target_stop_count + 1))
+        target_fuel_per_lap_l = config.tank_capacity_l / required_longest_stint_laps
         required_saving_l = max(
             0.0,
             config.baseline_fuel_per_lap_l - target_fuel_per_lap_l,
@@ -100,6 +101,7 @@ def build_fuel_saving_targets(*, config: RaceStrategyConfig) -> pl.DataFrame:
                 "target_stop_count": target_stop_count,
                 "race_laps": race_laps,
                 "available_fuel_l": available_fuel_l,
+                "required_longest_stint_laps": required_longest_stint_laps,
                 "target_fuel_per_lap_l": target_fuel_per_lap_l,
                 "required_fuel_saving_per_lap_l": required_saving_l,
                 "is_less_than_baseline_stop_count": target_stop_count < baseline_stops,
@@ -266,6 +268,7 @@ _TARGET_COLUMNS = [
     "target_stop_count",
     "race_laps",
     "available_fuel_l",
+    "required_longest_stint_laps",
     "target_fuel_per_lap_l",
     "required_fuel_saving_per_lap_l",
     "is_less_than_baseline_stop_count",
@@ -277,6 +280,7 @@ _TARGET_SCHEMA = {
     "target_stop_count": pl.Int64,
     "race_laps": pl.Int64,
     "available_fuel_l": pl.Float64,
+    "required_longest_stint_laps": pl.Int64,
     "target_fuel_per_lap_l": pl.Float64,
     "required_fuel_saving_per_lap_l": pl.Float64,
     "is_less_than_baseline_stop_count": pl.Boolean,

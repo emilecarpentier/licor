@@ -174,6 +174,13 @@ def _lico_metrics(
     zone: TrackZoneDefinition,
     config: ZonePassConfig,
 ) -> dict[str, float | bool | None]:
+    if (
+        zone.lico_eligible is not True
+        or zone.lico_window_start_m is None
+        or zone.brake_reference_m is None
+    ):
+        return _empty_lico_metrics()
+
     pre_brake = zone_samples.filter(
         (pl.col("lap_distance_m") >= zone.lico_window_start_m)
         & (pl.col("lap_distance_m") < zone.brake_reference_m)

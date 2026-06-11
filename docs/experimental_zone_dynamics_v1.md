@@ -274,6 +274,11 @@ reporting:
   excluded laps;
 - tire-regime labels are still exported for audit and hover/report context, but
   they do not yet modify the plan itself.
+- Session-level cue-latency adaptation is intentionally deferred to the live
+  validation and transfer-design backlog; this experimental branch keeps the
+  current speed-aware cue timing as the stable live reference. When that layer
+  arrives, it should shift cue trigger timing only (`cue_distance_m`), not zone
+  selection, requested LICO distance, or `planned_lift_start_m`.
 
 Because the project does not yet carry tire-wear telemetry, the next validation
 layer is not a tire-wear model. Instead, the branch should export an observed

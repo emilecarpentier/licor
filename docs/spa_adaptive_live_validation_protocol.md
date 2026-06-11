@@ -34,6 +34,8 @@ Stage 3 remains blocked for now:
 - true adaptive live replanning during the same session;
 - next-lap plan updates inside the running cue loop without operator-confirmed
   freeze between blocks.
+- session-level reaction-time or cue-latency recalibration inside the live
+  validation loop.
 
 The current repo can already validate that adaptive handoffs make sense in
 offline replay. It now also includes:
@@ -45,6 +47,12 @@ offline replay. It now also includes:
 
 It still does not provide a polished real-time adaptive session harness. Do not
 pretend otherwise in the first pilot.
+
+The idea of adapting cue-latency compensation to the driver's effective
+reaction time is now a documented future backlog item. It should not be tuned
+ad hoc during the current Spa live-validation blocks; the current
+`selected_zones_latency_v2` speed-aware baseline remains the reference until the
+cross-circuit transfer design work is further along.
 
 Important:
 

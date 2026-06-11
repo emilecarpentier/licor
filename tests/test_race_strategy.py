@@ -79,9 +79,30 @@ def test_builds_fuel_saving_targets_for_lower_stop_counts():
         "is_less_than_baseline_stop_count",
     ).rows()
     assert [row[0] for row in rows] == [0, 1, 2]
-    assert [row[1] for row in rows] == pytest.approx([1.5, 3.0, 4.5])
+    assert [row[1] for row in rows] == pytest.approx([1.5, 3.0, 75.0 / 17.0])
     assert [row[2] for row in rows] == pytest.approx([1.9, 0.4, 0.0])
     assert [row[3] for row in rows] == [True, True, False]
+
+
+def test_builds_fuel_saving_targets_with_discrete_stint_constraint():
+    config = RaceStrategyConfig(
+        race_duration_min=100.0,
+        tank_capacity_l=75.0,
+        baseline_fuel_per_lap_l=2.776314629448785,
+        baseline_lap_time_s=111.49555555555558,
+        pit_lane_commitment_time_s=70.0,
+        refill_rate_lps=2.0,
+        race_laps_override=55,
+    )
+
+    targets = build_fuel_saving_targets(config=config)
+
+    one_stop = targets.filter(pl.col("target_stop_count") == 1).row(0, named=True)
+    assert one_stop["required_longest_stint_laps"] == 28
+    assert one_stop["target_fuel_per_lap_l"] == pytest.approx(75.0 / 28.0)
+    assert one_stop["required_fuel_saving_per_lap_l"] == pytest.approx(
+        2.776314629448785 - (75.0 / 28.0)
+    )
 
 
 def test_evaluates_custom_scenario_frame():

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "dataset_id": "paul_ricard_lmp2_transfer_v1_bootstrap",
+  "track_name": "Circuit Paul Ricard",
+  "car_class": "LMP2_ELMS",
+  "notes": "Bootstrap priors refreshed after two Paul Ricard controlled-random runs and T15 demotion. transfer_profile=default_transfer_v1",
+  "zones": [
+    {
+      "zone_id": "pr_t01_t02",
+      "display_label": "T01-T02",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": 96.0,
+      "notes": "transfer_archetype=candidate_regular | optimization_role=candidate | Regular candidate; cap by both local window and conservative ceiling. | Baseline bootstrap candidate. Heavy first braking event after the start/finish straight; keep as an early controlled-random candidate."
+    },
+    {
+      "zone_id": "pr_t03",
+      "display_label": "T03",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": 96.0,
+      "notes": "transfer_archetype=candidate_regular | optimization_role=candidate | Regular candidate; cap by both local window and conservative ceiling. | Baseline bootstrap candidate at the first brake of the T03-T07 sequence. Driver-reported lap 13 mistake should later become a zone-only exclusion for T03 rather than a whole-lap rejection."
+    },
+    {
+      "zone_id": "pr_t05",
+      "display_label": "T05",
+      "feasibility_score": 0,
+      "strategy_role": "excluded",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": null,
+      "notes": "transfer_archetype=validation_only | optimization_role=validation_only | Validation-only zone; not eligible for bootstrap planning. | Small mid-sequence brake event kept for validation only in the first Paul Ricard bootstrap. Revisit only if controlled-random evidence later shows genuine local LICO value."
+    },
+    {
+      "zone_id": "pr_t07",
+      "display_label": "T07",
+      "feasibility_score": 0,
+      "strategy_role": "excluded",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": null,
+      "notes": "transfer_archetype=validation_only | optimization_role=validation_only | Validation-only zone; not eligible for bootstrap planning. | Exit-to-Mistral context. Held out of first-pass optimization because any lift here risks paying heavily on the long straight that follows."
+    },
+    {
+      "zone_id": "pr_t08_t09",
+      "display_label": "T08-T09",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": 96.0,
+      "notes": "transfer_archetype=candidate_regular | optimization_role=candidate | Regular candidate; cap by both local window and conservative ceiling. | Mistral chicane bootstrap candidate. Clear heavy braking event and high arrival speed make this one of the most important early Paul Ricard candidates."
+    },
+    {
+      "zone_id": "pr_t11",
+      "display_label": "T11",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": 96.0,
+      "notes": "transfer_archetype=candidate_regular | optimization_role=candidate | Regular candidate; cap by both local window and conservative ceiling. | High-speed technical candidate entering the Beausset section. Keep in the first controlled-random roster, but expect more driver-variance than Spa."
+    },
+    {
+      "zone_id": "pr_t12",
+      "display_label": "T12",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": 96.0,
+      "notes": "transfer_archetype=candidate_regular | optimization_role=candidate | Regular candidate; cap by both local window and conservative ceiling. | Follow-on technical braking event after T11. Keep as a separate candidate for now so controlled-random can tell us whether it behaves like a true local opportunity or just section noise."
+    },
+    {
+      "zone_id": "pr_t14",
+      "display_label": "T14",
+      "feasibility_score": 4,
+      "strategy_role": "usable",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": 96.0,
+      "notes": "transfer_archetype=candidate_regular | optimization_role=candidate | Regular candidate; cap by both local window and conservative ceiling. | Short late-lap candidate. Kept in the bootstrap roster because the braking event is distinct, but it should stay conservative until local evidence is stronger."
+    },
+    {
+      "zone_id": "pr_t15",
+      "display_label": "T15",
+      "feasibility_score": 0,
+      "strategy_role": "excluded",
+      "allow_diagnostic_model": false,
+      "max_lico_distance_m": null,
+      "notes": "transfer_archetype=validation_only | optimization_role=validation_only | Validation-only zone; not eligible for bootstrap planning. | Final-corner braking event kept for validation only after two controlled-random runs. Driver review says T15 is not a viable LICO corner, and local varied-LICO data showed near-zero fuel gain with no meaningful distance variation."
+    }
+  ]
+}

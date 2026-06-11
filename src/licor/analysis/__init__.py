@@ -81,8 +81,19 @@ from licor.analysis.race_strategy import (
 )
 from licor.analysis.strategy_priors import (
     StrategyPriorTable,
+    TransferPriorArchetype,
+    TransferPriorTable,
     ZoneStrategyPrior,
+    build_strategy_prior_table_from_track_zones,
+    default_transfer_prior_table,
+    infer_transfer_archetype_id_for_track_zone,
     load_strategy_prior_table,
+)
+from licor.analysis.transfer_bootstrap import (
+    TransferBootstrapProvenanceTable,
+    TransferBootstrapZoneProvenance,
+    build_transfer_bootstrap_evaluation_checklist,
+    build_transfer_bootstrap_provenance,
 )
 from licor.analysis.zone_optimizer import (
     ZoneOptimizerConfig,
@@ -165,6 +176,10 @@ __all__ = [
     "SpaV2ReadinessArtifactPaths",
     "SpaV2QualityArtifactPaths",
     "StrategyPriorTable",
+    "TransferBootstrapProvenanceTable",
+    "TransferBootstrapZoneProvenance",
+    "TransferPriorArchetype",
+    "TransferPriorTable",
     "TrackZoneDefinition",
     "TrackZoneProposalConfig",
     "TrackZoneTable",
@@ -195,6 +210,9 @@ __all__ = [
     "build_labeled_lap_samples",
     "build_labeled_zone_passes",
     "compare_push_and_lico_strategy",
+    "build_strategy_prior_table_from_track_zones",
+    "build_transfer_bootstrap_evaluation_checklist",
+    "build_transfer_bootstrap_provenance",
     "build_zone_marginal_efficiency",
     "build_spa_v2_readiness_artifacts",
     "build_spa_v2_quality_artifacts",
@@ -223,6 +241,8 @@ __all__ = [
     "load_track_zone_table",
     "merge_brake_segments",
     "optimize_zone_lico_plan",
+    "default_transfer_prior_table",
+    "infer_transfer_archetype_id_for_track_zone",
     "propose_track_zone_distances",
     "rank_zone_cost_benefit",
     "required_stop_count",

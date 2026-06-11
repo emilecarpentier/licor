@@ -319,6 +319,39 @@
       "audio_cue_plan_id": "experimental_live_candidate_range_aware_selected_zones_latency_v2",
       "execution_quality": "clean",
       "driver_notes": "Telemetry-enabled confirmation run for the speed-aware selected-zones latency v2 plan. Completed clean evidence lives on laps 8-9; lap 7 is excluded because it still contains the initial in-pits attachment context. The planned-versus-executed review shows near-zero mean distance error across the active zones, so this run freezes selected_zones_latency_v2 as the current live baseline. Lap notes and zone signoff were not fully transcribed, so treat this as strong plan-execution evidence rather than a deep session-level workload study."
+    },
+    {
+      "run_id": "recommendation_execution_selected_latency_v2_guarded_preview_01",
+      "file": "C:/Program Files (x86)/Steam/steamapps/common/Le Mans Ultimate/UserData/Telemetry/Circuit de Spa-Francorchamps_P_2026-05-31T02_08_30Z.duckdb",
+      "track": "Circuit de Spa-Francorchamps",
+      "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397",
+      "session_type": "Practice",
+      "run_type": "recommendation execution adaptive guarded preview",
+      "collection_label": "recommendation_execution",
+      "labels_quality": "medium",
+      "valid_laps": [2, 3, 4, 5],
+      "borderline_laps": [],
+      "context_laps": [1],
+      "excluded_laps": [0],
+      "include_in_lap_summary": true,
+      "collection_protocol_id": "spa_lmp2_v2_collection_protocol",
+      "collection_session_id": "recommendation_execution",
+      "collection_design": "recommendation_execution",
+      "target_zones": [
+        "spa_t01",
+        "spa_t05_t06",
+        "spa_t08",
+        "spa_t10_t11",
+        "spa_t12_t13",
+        "spa_t18"
+      ],
+      "target_zones_source": "from_exported_plan",
+      "planned_lico_profile_id": "spa_exp_guarded_handoff_selected_latency_v2",
+      "planned_lico_profile_description": "Guarded adaptive between-laps follow-up candidate derived from the validated selected-zones latency v2 baseline session.",
+      "audio_cue_plan_id": "experimental_guarded_adaptive_handoff|selected_zones_latency_v2_baseline|adaptive_guarded|observed_execution:recommendation_execution_selected_latency_v2_02|lap_8_to_9",
+      "execution_quality": "partial",
+      "driver_notes": "Guarded adaptive operator-preview follow-up run. Driver reported 2-3 missed audible cues because of music, so a few corners may show later-than-intended braking or lift onset. Telemetry-backed review still shows the plan remained globally coherent. Lap 1 is kept as context, laps 2-5 as valid evidence, and lap 0 is excluded as the in-pits/out-lap attachment context. The raw live event log continued into non-telemetry laps 6-7 after the session; those rows are ignored from processed intake artifacts."
     }
   ]
 }

@@ -361,6 +361,27 @@ The current v2 sidecar now includes two new baseline refresh runs and four
   Lap notes and zone signoff were not fully transcribed, so the run should be
   read as strong plan-execution evidence rather than a deep workload study.
 
+#### Recommendation Execution Selected Latency V2 Guarded Preview 01
+
+- File:
+  `C:/Program Files (x86)/Steam/steamapps/common/Le Mans Ultimate/UserData/Telemetry/Circuit de Spa-Francorchamps_P_2026-05-31T02_08_30Z.duckdb`
+- Run id: `recommendation_execution_selected_latency_v2_guarded_preview_01`
+- Collection design: `recommendation_execution`
+- Planned profile: `spa_exp_guarded_handoff_selected_latency_v2`
+- Audio cue plan id:
+  `experimental_guarded_adaptive_handoff|selected_zones_latency_v2_baseline|adaptive_guarded|observed_execution:recommendation_execution_selected_latency_v2_02|lap_8_to_9`
+- Valid laps: `2, 3, 4, 5`
+- Context laps: `1`
+- Excluded laps: `0`
+- Notes: first telemetry-backed live run of the guarded adaptive operator-preview
+  follow-up candidate. The driver reported 2-3 missed audible cues because of
+  music, so a few corners may show later-than-intended lift or braking despite
+  an otherwise coherent plan. The telemetry review still supports keeping the
+  run: mean lift-start deltas stay moderate overall, with one obvious outlier
+  on `T08` lap 4 and a few later-than-ideal moments on `T18`, `T05-T06`, and
+  `T10-T11`. The raw cue log continued into non-telemetry laps `6-7` after the
+  session; those rows are ignored from processed intake artifacts.
+
 Current interpretation after four Spa v2 `controlled_random` runs:
 
 - controlled-random coverage is now strong enough to refit Spa zone curves

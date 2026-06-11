@@ -94,6 +94,41 @@ def test_skips_incomplete_and_non_candidate_zones_by_default():
     assert passes["zone_id"].to_list() == ["synthetic_t01"]
 
 
+def test_validation_only_zone_can_be_modeled_without_lico_metrics():
+    table = TrackZoneTable(
+        track_name="Synthetic Spa",
+        car_class="LMP2_TEST",
+        zones=[
+            TrackZoneDefinition(
+                zone_id="validation_zone",
+                turn_numbers=(19,),
+                display_label="T19",
+                start_distance_m=100.0,
+                lico_window_start_m=None,
+                brake_reference_m=250.0,
+                end_distance_m=400.0,
+                lico_eligible=False,
+                optimization_role="validation_only",
+                validation_end_rule="manual_distance",
+                review_status="driver_reviewed",
+            ),
+        ],
+    )
+
+    passes = extract_zone_passes(
+        _synthetic_lap_samples(lap_number=1, has_lico=False),
+        table,
+        config=ZonePassConfig(optimization_roles=("candidate", "validation_only")),
+    )
+
+    assert passes.height == 1
+    row = passes.row(0, named=True)
+    assert row["zone_id"] == "validation_zone"
+    assert row["has_lico"] is False
+    assert row["lico_start_m"] is None
+    assert row["lico_start_distance_before_brake_m"] is None
+
+
 def test_marks_zone_pass_with_missing_boundary_coverage():
     samples = _synthetic_lap_samples(lap_number=1, has_lico=False).filter(
         pl.col("lap_distance_m") <= 370.0
