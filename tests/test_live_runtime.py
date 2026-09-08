@@ -88,6 +88,48 @@ def test_static_live_session_refuses_to_overwrite_existing_logs(tmp_path: Path):
         )
 
 
+def test_static_live_session_logs_fuel_on_muted_and_enabled_laps(tmp_path: Path):
+    plan_path = tmp_path / "plan.csv"
+    _plan().filter(pl.col("zone_id") == "t01").write_csv(plan_path)
+    audio = RecordingAudioCueAdapter()
+    source = _ListSampleSource(
+        [
+            LmuLiveTelemetrySample(
+                lap_number=lap,
+                lap_distance_m=distance,
+                ts=float(index),
+                fuel_level_l=70.0 - index * 0.1,
+                speed_kph=200.0,
+                throttle_pct=100.0,
+                brake_pct=0.0,
+                gear=5,
+            )
+            for index, (lap, distance) in enumerate(
+                [(2, 345), (2, 352), (3, 345), (3, 352), (4, 0)]
+            )
+        ]
+    )
+    events = run_static_live_cue_session(
+        plan_path=plan_path,
+        event_log_path=tmp_path / "events.csv",
+        telemetry_log_path=tmp_path / "telemetry.csv",
+        sample_source=source,
+        audio_adapter=audio,
+        config=LiveStaticCueSessionConfig(
+            cue_lap_numbers=(3,), stop_after_lap_number=3
+        ),
+    )
+    assert source.closed
+    assert events.select("lap_number", "cue_enabled").rows() == [(2, False), (3, True)]
+    assert [cue.lap_number for cue in audio.cues] == [3]
+    samples = pl.read_csv(tmp_path / "telemetry.csv")
+    assert samples.height == 5
+    assert samples["fuel_level_l"].to_list() == pytest.approx(
+        [70, 69.9, 69.8, 69.7, 69.6]
+    )
+    assert pl.read_csv(tmp_path / "events_accuracy.csv")["cue_count"].sum() == 1
+
+
 def _plan() -> pl.DataFrame:
     return pl.DataFrame(
         [

@@ -25,6 +25,25 @@ def test_loads_live_cue_plan_csv(tmp_path: Path):
     ]
 
 
+def test_loads_and_replays_plan_with_blank_optional_numeric_csv_columns(tmp_path: Path):
+    path = tmp_path / "plan.csv"
+    _plan().filter(pl.col("zone_id") == "t01").with_columns(
+        pl.lit(None, dtype=pl.Float64).alias("track_length_m"),
+        pl.lit(None, dtype=pl.Float64).alias("cue_latency_reference_speed_kph"),
+    ).write_csv(path)
+
+    plan = load_live_cue_plan(path)
+
+    assert plan.schema["track_length_m"] == pl.Float64
+    assert plan["track_length_m"].to_list() == [None]
+    assert plan.schema["cue_latency_reference_speed_kph"] == pl.Float64
+    events = simulate_live_cue_events(plan, pl.DataFrame({
+        "lap_number": [1, 1], "lap_distance_m": [345.0, 352.0], "ts": [0.0, 0.1],
+    }))
+    assert events.height == 1
+    assert events["trigger_status"].to_list() == ["fired_on_time"]
+
+
 def test_triggers_cue_when_distance_crosses_without_exact_sample():
     events = simulate_live_cue_events(
         _plan().filter(pl.col("zone_id") == "t01"),

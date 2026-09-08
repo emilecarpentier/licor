@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "dataset_id": "paul_ricard_lmp2_2026-09-07",
+  "track_name": "Circuit Paul Ricard", "car_class": "LMP2_ELMS",
+  "review_status": "driver_reviewed",
+  "notes": "Transcription of existing driver review in docs/paul_ricard_candidate_zone_manual_review_checklist.md and original baseline review CSV. Lap-level exclusions/context remain in dataset sidecar. This does not promote provisional boundaries or certify model predictive performance.",
+  "zone_pass_exclusions": [
+    {"run_id": "paul_ricard_baseline_push_02", "lap_number": 13, "zone_id": "pr_t03", "reason": "driver_reported_braking_mistake", "notes": "Checklist identifies lap13 T03 mistake. Original outlier telemetry reports braking 12.16m later than baseline. Exclude only this zone; retain unaffected zones."}
+  ]
+}

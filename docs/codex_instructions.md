@@ -2,6 +2,11 @@
 
 ## Project Direction
 
+For current sequencing and validation gates, follow
+`docs/restart_plan_2026-09.md` and the active section of `docs/roadmap.md`.
+Paul Ricard static pilot preparation comes next. Adaptive decisions are replayed
+after the run, using only information available at each decision time.
+
 LICOR is currently an offline telemetry analysis project moving toward a
 validated recommendation loop. Prioritize reliable offline modeling and reports,
 then a minimal live audio-cue validation path. Full overlays, polished apps, and
@@ -44,8 +49,9 @@ When adding code, prefer this order:
 12. decision-quality reports, marginal diagnostics, and sensitivity analysis;
 13. controlled-random and targeted data collection protocols;
 14. minimal live audio cues for empirical recommendation validation;
-15. Streamlit dashboard;
-16. cross-circuit generalization and heavier statistical models.
+15. grouped held-out evaluation and low-data cross-circuit transfer benchmarks;
+16. hierarchical models, then validated adaptive recommendations;
+17. Streamlit dashboard.
 
 ## Technical Preferences
 

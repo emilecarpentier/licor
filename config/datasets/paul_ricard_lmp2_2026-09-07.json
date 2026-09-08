@@ -1,0 +1,72 @@
+{
+  "dataset_id": "paul_ricard_lmp2_2026-09-07",
+  "description": "Retrospective reconstruction of four May/June runs. Original lap numbers preserved. Baseline_02 lap 13 restored outside T03; lap 14 remains context pending late-sector review. Tire-wear setting of historical runs is not independently recorded.",
+  "lap_distance_range_m": [5700, 5900],
+  "runs": [
+    {
+      "run_id": "paul_ricard_baseline_push_01",
+      "file": "data/Paul Ricard Circuit_P_2026-05-31T04_14_37Z_baseline_push_01.duckdb",
+      "track": "Circuit Paul Ricard", "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397", "session_type": "Practice",
+      "run_type": "push_baseline", "collection_label": "none",
+      "labels_quality": "retrospective_existing_review",
+      "valid_laps": [1, 2, 3, 4, 5, 6], "excluded_laps": [0],
+      "collection_protocol_id": "paul_ricard_lmp2_reconstruction_v1",
+      "collection_session_id": "baseline", "collection_design": "baseline",
+      "target_zones": [], "execution_quality": "unknown",
+      "driver_notes": "Clean candidates recovered from prior baseline summary; no new driver signoff implied. Lap 0 outlap. LastImpactMagnitude recorded as Boolean, not physical magnitude.",
+      "lap_reviews": [{"lap_number": 0, "action": "exclude_outlap", "reason": "Initial completed interval is in pits."}]
+    },
+    {
+      "run_id": "paul_ricard_baseline_push_02",
+      "file": "data/Paul Ricard Circuit_P_2026-05-31T04_28_43Z_baseline_push_02.duckdb",
+      "track": "Circuit Paul Ricard", "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397", "session_type": "Practice",
+      "run_type": "push_baseline", "collection_label": "none",
+      "labels_quality": "retrospective_existing_review",
+      "valid_laps": [9, 10, 11], "borderline_laps": [13], "context_laps": [14], "excluded_laps": [8, 12],
+      "collection_protocol_id": "paul_ricard_lmp2_reconstruction_v1",
+      "collection_session_id": "baseline", "collection_design": "baseline",
+      "target_zones": [], "execution_quality": "unknown",
+      "driver_notes": "Prior modeling CSV omitted 12, 13 and 14. Preserve lap12 exclusion; restore lap13 other zones with explicit T03-only driver exclusion; lap14 context pending review. Only laps9-11 enter clean whole-lap baseline.",
+      "lap_reviews": [
+        {"lap_number": 8, "action": "exclude_outlap", "reason": "Initial completed interval is in pits."},
+        {"lap_number": 12, "action": "exclude_whole_lap", "reason": "Prior review: large late-lap mistake after reference brake 6, 119.18 s."},
+        {"lap_number": 13, "action": "keep_lap_review_zone", "reason": "Driver-reported T03 braking mistake; other zones restored. Excluded from clean whole-lap baseline."},
+        {"lap_number": 14, "action": "keep_lap_review_late_sector", "reason": "Prior review: moderate late-sector slowdown, 114.20 s. Retained as context; no promotion into modeling without review."}
+      ]
+    },
+    {
+      "run_id": "paul_ricard_controlled_random_01",
+      "file": "data/Paul Ricard Circuit_P_2026-06-01T23_09_07Z_controlled_random_01.duckdb",
+      "track": "Circuit Paul Ricard", "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397", "session_type": "Practice",
+      "run_type": "lico_calibration", "collection_label": "controlled_random",
+      "labels_quality": "retrospective_existing_review",
+      "valid_laps": [1, 2, 3, 4, 5, 6, 7], "excluded_laps": [0],
+      "collection_protocol_id": "paul_ricard_lmp2_reconstruction_v1",
+      "collection_session_id": "controlled_random", "collection_design": "controlled_random",
+      "target_zones": ["pr_t01_t02", "pr_t03", "pr_t08_t09", "pr_t11", "pr_t12", "pr_t14"],
+      "planned_lico_profile_id": "historical_controlled_random_unscripted",
+      "planned_lico_profile_description": "Retrospective identifier for natural variable lifts; no prospective per-lap distances or random seed recorded.",
+      "execution_quality": "unknown", "driver_notes": "All 7 previously retained completed driving laps retained; no new driver signoff implied.",
+      "lap_reviews": [{"lap_number": 0, "action": "exclude_outlap", "reason": "Initial completed interval is in pits."}]
+    },
+    {
+      "run_id": "paul_ricard_controlled_random_02",
+      "file": "data/Paul Ricard Circuit_P_2026-06-01T23_36_04Z_controlled_random_02.duckdb",
+      "track": "Circuit Paul Ricard", "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397", "session_type": "Practice",
+      "run_type": "lico_calibration", "collection_label": "controlled_random",
+      "labels_quality": "retrospective_existing_review",
+      "valid_laps": [10, 11, 12, 13, 14, 15, 16, 17], "excluded_laps": [9],
+      "collection_protocol_id": "paul_ricard_lmp2_reconstruction_v1",
+      "collection_session_id": "controlled_random", "collection_design": "controlled_random",
+      "target_zones": ["pr_t01_t02", "pr_t03", "pr_t08_t09", "pr_t11", "pr_t12", "pr_t14"],
+      "planned_lico_profile_id": "historical_controlled_random_unscripted",
+      "planned_lico_profile_description": "Retrospective identifier for natural variable lifts; no prospective per-lap distances or random seed recorded.",
+      "execution_quality": "unknown", "driver_notes": "All 8 previously retained completed driving laps retained; lap numbering starts at9 outlap and is not rewritten.",
+      "lap_reviews": [{"lap_number": 9, "action": "exclude_outlap", "reason": "Initial completed interval is in pits."}]
+    }
+  ]
+}

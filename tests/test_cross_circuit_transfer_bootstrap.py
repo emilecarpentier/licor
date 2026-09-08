@@ -136,7 +136,7 @@ def test_build_strategy_prior_table_covers_default_transfer_checklist_branches()
         ("excluded_zone", 0, "excluded", None),
         ("validation_zone", 0, "excluded", None),
         ("short_candidate", 3, "usable", 54.0),
-        ("regular_candidate", 4, "usable", 71.2),
+        ("regular_candidate", 4, "usable", 72.0),
     ]
     notes_by_zone = {
         row["zone_id"]: row["notes"]

@@ -1,10 +1,39 @@
 # LICOR Roadmap
 
 Use this roadmap as the main handoff document for future Codex sessions. Start
-new work from the first incomplete phase, keep edits small, and update this
+new work from the active priorities below, keep edits small, and update this
 file whenever the strategy changes meaningfully.
 
-## Strategic Reset
+## Active Priorities — 2026-09-07
+
+The [September restart plan](restart_plan_2026-09.md) is the current execution
+plan. It supersedes the historical sequencing below. Historical completion
+marks describe implemented artifacts, not proof of predictive performance.
+
+1. Reconcile Paul Ricard zone boundaries and rebuild the pipeline from raw
+   telemetry with dataset metadata and artifact provenance.
+2. Prepare a frozen static pilot pack and a 5–7 clean-lap collection protocol.
+3. Validate cue execution and fuel/time predictions in that run; inspect
+   adaptive recommendations afterwards using only past information.
+4. Establish grouped held-out evaluation and calibrated uncertainty.
+5. Benchmark low-data transfer, then expand circuit diversity and test a
+   hierarchical model before considering adaptive live authority.
+
+Confirmed: T03 and T08-T09 starts have moved 75 m upstream, tire wear is disabled
+for the pilot, and simulator time is the collection constraint. Paul artifacts
+have now been rebuilt from the four raw recordings and a frozen static pack
+passes synthetic and recorded-telemetry replay checks. Use the
+[pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the next 5–7-lap
+session. Fuel/time accuracy and actual Paul audio execution remain to be measured.
+
+The initial generalization target is circuits within the same LMP2 vehicle.
+Drivers and setups are later calibration dimensions; cross-vehicle/category
+transfer needs additional vehicle-specific evidence.
+
+## Historical Strategic Reset — May 2026
+
+The following phases preserve the development history. Use the active
+priorities above for ordering new work.
 
 LICOR is no longer aiming for a simple sequence of:
 
@@ -61,9 +90,9 @@ As of 2026-05-28, LICOR has:
   `micro_lico_only`, and the static fuel target becomes reachable without
   depending on `T14`.
 
-The current bottleneck is no longer raw telemetry processing or static live cue
-timing. It is adaptive replanning credibility and the bridge from offline
-between-lap logic into live operation.
+At that time, adaptive replanning was treated as the next bottleneck. The
+September audit instead prioritizes reproducibility and held-out static
+fuel/time validation before further adaptive development.
 
 ## Phase 0: Project Foundation
 
@@ -256,8 +285,8 @@ Goal: replace fragile single-point selection with a support-aware optimizer.
   density, distance to nearest observed point, residual variance, and
   disagreement between simple and dynamics-aware views.
 - [x] Add robust scoring that penalizes edge-of-surface points and weak support.
-- [x] Output recommended LICO ranges or credible intervals, not only a single
-  point estimate.
+- [x] Output heuristic recommended LICO ranges; statistical interval calibration
+  remains unimplemented.
 - [x] Compare static naive plans against robust plans on Spa.
 - [x] Preserve rollback by keeping the robust optimizer experimental until it is
   clearly better.
@@ -280,7 +309,8 @@ Notes:
 
 ## Phase 8: Adaptive Lap-By-Lap Replanning Simulator
 
-Status: in progress. This phase now comes before real live-cue validation.
+Status: experimental implementation exists; further development is deferred
+until the static predictive validation gates in the restart plan are met.
 
 Goal: simulate a race that diverges from the initial plan and update the next
 lap's LICO demand accordingly.
@@ -500,9 +530,9 @@ Current interpretation:
 ## Recommended Next Codex Task
 
 ```text
-Use `docs/cross_circuit_transfer_v1.md` to define the first transfer-ready
-prior schema, bootstrap workflow, and evaluation contract before writing
-new-circuit implementation code. Keep `selected_zones_latency_v2` as the live
-baseline while that design work happens, and treat adaptive reaction-time
-calibration as a later live-polish backlog item.
+Run the operator preflight and static Paul pilot using
+docs/paul_ricard_static_pilot_run_sheet.md. On return, intake the raw recording and
+session logs, score the frozen predictions before any refit, then audit adaptive
+decisions offline. Stage A software preparation is complete; grouped predictive
+evaluation and transfer ML remain later gates.
 ```

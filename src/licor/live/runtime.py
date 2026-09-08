@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Protocol
 
 import polars as pl
 
-from licor.analysis import LiveCueRunnerConfig, load_live_cue_plan, summarize_live_cue_event_accuracy
+from licor.analysis import (
+    LiveCueRunnerConfig,
+    load_live_cue_plan,
+    summarize_live_cue_event_accuracy,
+)
 from licor.live.audio import AudioCue, AudioCueAdapter, NullAudioCueAdapter
 from licor.live.lmu_shared_memory import LmuLiveTelemetrySample, LMUSharedMemoryReader
 
@@ -19,6 +23,8 @@ class LiveStaticCueSessionConfig(LiveCueRunnerConfig):
     overwrite_existing_logs: bool = False
     max_laps: int | None = None
     max_events: int | None = None
+    cue_lap_numbers: tuple[int, ...] | None = None
+    stop_after_lap_number: int | None = None
 
 
 class LiveTelemetrySampleSource(Protocol):
@@ -45,6 +51,7 @@ def run_static_live_cue_session(
     plan_path: str | Path,
     event_log_path: str | Path,
     accuracy_log_path: str | Path | None = None,
+    telemetry_log_path: str | Path | None = None,
     sample_source: LiveTelemetrySampleSource,
     audio_adapter: AudioCueAdapter | None = None,
     config: LiveStaticCueSessionConfig | None = None,
@@ -59,15 +66,39 @@ def run_static_live_cue_session(
     )
     emitted_rows: list[dict[str, object]] = []
     adapter = audio_adapter or NullAudioCueAdapter()
+    telemetry_handle = None
 
     try:
+        if telemetry_log_path is not None:
+            telemetry_columns = [field.name for field in fields(LmuLiveTelemetrySample)]
+            telemetry_path = _prepare_csv_output(
+                telemetry_log_path,
+                overwrite_existing=session_config.overwrite_existing_logs,
+                header=telemetry_columns,
+            )
+            telemetry_handle = telemetry_path.open("a", newline="", encoding="utf-8")
+            telemetry_writer = csv.DictWriter(
+                telemetry_handle, fieldnames=telemetry_columns
+            )
+            telemetry_count = 0
         while True:
-            sample = sample_source.read_next_sample(timeout_ms=session_config.update_timeout_ms)
+            sample = sample_source.read_next_sample(
+                timeout_ms=session_config.update_timeout_ms
+            )
             if sample is None:
                 continue
+            if telemetry_handle is not None:
+                telemetry_writer.writerow(asdict(sample))
+                telemetry_count += 1
+                if telemetry_count % 100 == 0:
+                    telemetry_handle.flush()
             for event in runtime.process_sample(sample):
-                _append_csv_row(event_path, header=_LIVE_CUE_EVENT_LOG_COLUMNS, row=event)
+                _append_csv_row(
+                    event_path, header=_LIVE_CUE_EVENT_LOG_COLUMNS, row=event
+                )
                 emitted_rows.append(event)
+                if not event["cue_enabled"]:
+                    continue
                 adapter.emit(
                     AudioCue(
                         plan_id=str(event["plan_id"]),
@@ -83,18 +114,22 @@ def run_static_live_cue_session(
     except KeyboardInterrupt:
         pass
     finally:
+        if telemetry_handle is not None:
+            telemetry_handle.close()
         sample_source.close()
 
     events = (
-        pl.DataFrame(emitted_rows, schema=_LIVE_CUE_EVENT_LOG_SCHEMA, strict=False).select(
-            _LIVE_CUE_EVENT_LOG_COLUMNS
-        )
+        pl.DataFrame(
+            emitted_rows, schema=_LIVE_CUE_EVENT_LOG_SCHEMA, strict=False
+        ).select(_LIVE_CUE_EVENT_LOG_COLUMNS)
         if emitted_rows
         else pl.DataFrame(schema=_LIVE_CUE_EVENT_LOG_SCHEMA)
     )
     if session_config.write_accuracy_log:
         accuracy_path = accuracy_log_path or _default_accuracy_log_path(event_path)
-        accuracy = summarize_live_cue_event_accuracy(events)
+        accuracy = summarize_live_cue_event_accuracy(
+            events.filter(pl.col("cue_enabled"))
+        )
         _write_frame(
             accuracy,
             accuracy_path,
@@ -108,6 +143,7 @@ def run_lmu_static_live_cue_session(
     plan_path: str | Path,
     event_log_path: str | Path,
     accuracy_log_path: str | Path | None = None,
+    telemetry_log_path: str | Path | None = None,
     audio_adapter: AudioCueAdapter | None = None,
     config: LiveStaticCueSessionConfig | None = None,
 ) -> pl.DataFrame:
@@ -116,6 +152,7 @@ def run_lmu_static_live_cue_session(
         plan_path=plan_path,
         event_log_path=event_log_path,
         accuracy_log_path=accuracy_log_path,
+        telemetry_log_path=telemetry_log_path,
         sample_source=sample_source,
         audio_adapter=audio_adapter,
         config=config,
@@ -123,7 +160,9 @@ def run_lmu_static_live_cue_session(
 
 
 class _LiveCueRuntime:
-    def __init__(self, live_cue_plan: pl.DataFrame, *, config: LiveStaticCueSessionConfig) -> None:
+    def __init__(
+        self, live_cue_plan: pl.DataFrame, *, config: LiveStaticCueSessionConfig
+    ) -> None:
         self._config = config
         self._cues = list(live_cue_plan.sort("cue_distance_m").iter_rows(named=True))
         self._track_length_m = _track_length_m(live_cue_plan, config.track_length_m)
@@ -137,9 +176,16 @@ class _LiveCueRuntime:
     def process_sample(self, sample: LmuLiveTelemetrySample) -> list[dict[str, object]]:
         if self._first_lap_number is None:
             self._first_lap_number = sample.lap_number
-        self._max_lap_seen = sample.lap_number if self._max_lap_seen is None else max(
-            self._max_lap_seen, sample.lap_number
+        self._max_lap_seen = (
+            sample.lap_number
+            if self._max_lap_seen is None
+            else max(self._max_lap_seen, sample.lap_number)
         )
+        if (
+            self._config.stop_after_lap_number is not None
+            and sample.lap_number > self._config.stop_after_lap_number
+        ):
+            return []
 
         previous_sample = self._previous_by_lap.get(sample.lap_number)
         triggered_zones = self._triggered_by_lap.setdefault(sample.lap_number, set())
@@ -151,7 +197,9 @@ class _LiveCueRuntime:
                 continue
             if not _should_trigger_cue(
                 cue_distance_m=float(cue["cue_distance_m"]),
-                previous_distance_m=None if previous_sample is None else previous_sample.lap_distance_m,
+                previous_distance_m=None
+                if previous_sample is None
+                else previous_sample.lap_distance_m,
                 current_distance_m=sample.lap_distance_m,
                 track_length_m=self._track_length_m,
                 max_initial_late_distance_m=self._config.max_initial_late_distance_m,
@@ -173,13 +221,23 @@ class _LiveCueRuntime:
         return events
 
     def should_stop(self) -> bool:
-        if self._config.max_events is not None and self._event_count >= self._config.max_events:
+        if (
+            self._config.stop_after_lap_number is not None
+            and self._max_lap_seen is not None
+            and self._max_lap_seen > self._config.stop_after_lap_number
+        ):
+            return True
+        if (
+            self._config.max_events is not None
+            and self._event_count >= self._config.max_events
+        ):
             return True
         if (
             self._config.max_laps is not None
             and self._first_lap_number is not None
             and self._max_lap_seen is not None
-            and (self._max_lap_seen - self._first_lap_number + 1) > self._config.max_laps
+            and (self._max_lap_seen - self._first_lap_number + 1)
+            > self._config.max_laps
         ):
             return True
         return False
@@ -194,7 +252,9 @@ def _cue_event_row(
     track_length_m: float | None,
 ) -> dict[str, object]:
     cue_distance_m = float(cue["cue_distance_m"])
-    cue_tolerance_m = float(cue.get("cue_tolerance_m") or config.default_cue_tolerance_m)
+    cue_tolerance_m = float(
+        cue.get("cue_tolerance_m") or config.default_cue_tolerance_m
+    )
     cue_error_m = _signed_distance_delta_m(
         sample.lap_distance_m,
         cue_distance_m,
@@ -218,6 +278,10 @@ def _cue_event_row(
         "sample_ts": sample.ts,
         "sample_elapsed_s": sample.elapsed_s,
         "audio_cue_kind": config.audio_cue_kind,
+        "cue_enabled": (
+            config.cue_lap_numbers is None
+            or sample.lap_number in config.cue_lap_numbers
+        ),
         "notes": str(cue.get("notes") or ""),
     }
 
@@ -260,17 +324,24 @@ def _trigger_status(cue_error_m: float, cue_tolerance_m: float) -> str:
     return "fired_late"
 
 
-def _track_length_m(live_cue_plan: pl.DataFrame, config_track_length_m: float | None) -> float | None:
+def _track_length_m(
+    live_cue_plan: pl.DataFrame, config_track_length_m: float | None
+) -> float | None:
     if "track_length_m" not in live_cue_plan.columns:
         return config_track_length_m
-    non_null = [float(value) for value in live_cue_plan["track_length_m"].drop_nulls().to_list()]
+    non_null = [
+        float(value) for value in live_cue_plan["track_length_m"].drop_nulls().to_list()
+    ]
     if not non_null:
         return config_track_length_m
     track_lengths = set(non_null)
     if len(track_lengths) != 1:
         raise ValueError("live cue plan track_length_m values must be consistent")
     plan_track_length_m = next(iter(track_lengths))
-    if config_track_length_m is not None and abs(config_track_length_m - plan_track_length_m) > 1e-9:
+    if (
+        config_track_length_m is not None
+        and abs(config_track_length_m - plan_track_length_m) > 1e-9
+    ):
         raise ValueError("config track_length_m conflicts with live cue plan")
     return plan_track_length_m
 
@@ -296,7 +367,9 @@ def _append_csv_row(path: Path, *, header: list[str], row: dict[str, object]) ->
         writer.writerow(row)
 
 
-def _write_frame(frame: pl.DataFrame, path: str | Path, *, overwrite_existing: bool) -> Path:
+def _write_frame(
+    frame: pl.DataFrame, path: str | Path, *, overwrite_existing: bool
+) -> Path:
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if output_path.exists() and not overwrite_existing:
@@ -328,6 +401,7 @@ _LIVE_CUE_EVENT_LOG_COLUMNS = [
     "sample_ts",
     "sample_elapsed_s",
     "audio_cue_kind",
+    "cue_enabled",
     "notes",
 ]
 
@@ -349,5 +423,6 @@ _LIVE_CUE_EVENT_LOG_SCHEMA = {
     "sample_ts": pl.Float64,
     "sample_elapsed_s": pl.Float64,
     "audio_cue_kind": pl.String,
+    "cue_enabled": pl.Boolean,
     "notes": pl.String,
 }

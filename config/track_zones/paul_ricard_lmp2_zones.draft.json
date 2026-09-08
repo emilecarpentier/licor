@@ -4,35 +4,35 @@
   "car_class": "LMP2_ELMS",
   "distance_unit": "m",
   "status": "needs_driver_review",
-  "source": "Phase 10a bootstrap draft built from Paul Ricard baseline push runs before controlled-random collection.",
+  "source": "Phase 10a bootstrap from Paul Ricard push runs; reconciled with driver checklist and raw baseline telemetry on 2026-09-07 for a prospective static pilot. Model validation remains pending.",
   "zones": [
     {
       "zone_id": "pr_t01_t02",
       "turn_numbers": [1, 2],
       "display_label": "T01-T02",
-      "start_distance_m": 369.138794,
-      "lico_window_start_m": 369.138794,
+      "start_distance_m": 249.138794,
+      "lico_window_start_m": 249.138794,
       "brake_reference_m": 489.138794,
       "end_distance_m": 749.138794,
       "lico_eligible": true,
       "optimization_role": "candidate",
       "validation_end_rule": "manual_distance",
       "review_status": "driver_reviewed",
-      "notes": "Baseline bootstrap candidate. Heavy first braking event after the start/finish straight; keep as an early controlled-random candidate."
+      "notes": "Heavy first braking event after the start/finish straight. Reconciled 2026-09-07: checklist interpreted as an additional 120 m upstream of the original start, giving 240 m before braking. Raw baseline_01 laps 1-3 show full throttle and no brake near the new start. Capture margin is not a lift recommendation."
     },
     {
       "zone_id": "pr_t03",
       "turn_numbers": [3],
       "display_label": "T03",
-      "start_distance_m": 1069.949707,
-      "lico_window_start_m": 1069.949707,
+      "start_distance_m": 994.949707,
+      "lico_window_start_m": 994.949707,
       "brake_reference_m": 1189.949707,
-      "end_distance_m": 1269.949707,
+      "end_distance_m": 1319.949707,
       "lico_eligible": true,
       "optimization_role": "candidate",
       "validation_end_rule": "manual_distance",
       "review_status": "driver_reviewed",
-      "notes": "Baseline bootstrap candidate at the first brake of the T03-T07 sequence. Driver-reported lap 13 mistake should later become a zone-only exclusion for T03 rather than a whole-lap rejection."
+      "notes": "First brake of the T03-T07 sequence. Preserve the baseline_02 lap 13 T03-only mistake exclusion. On 2026-09-07 the driver confirmed an additional 75 m upstream capture margin (195 m before braking); baseline_01 laps 1-3 show full throttle and no brake near it. End extended 50 m per the original checklist, before the next brake reference at 1338.74 m. T05 validation-only coverage overlaps: never sum it with T03 for additive lap sanity. The approximate capture margin is not a recommended lift distance."
     },
     {
       "zone_id": "pr_t05",
@@ -66,15 +66,15 @@
       "zone_id": "pr_t08_t09",
       "turn_numbers": [8, 9],
       "display_label": "T08-T09",
-      "start_distance_m": 2686.660889,
-      "lico_window_start_m": 2686.660889,
+      "start_distance_m": 2611.660889,
+      "lico_window_start_m": 2611.660889,
       "brake_reference_m": 2806.660889,
       "end_distance_m": 3066.660889,
       "lico_eligible": true,
       "optimization_role": "candidate",
       "validation_end_rule": "manual_distance",
       "review_status": "driver_reviewed",
-      "notes": "Mistral chicane bootstrap candidate. Clear heavy braking event and high arrival speed make this one of the most important early Paul Ricard candidates."
+      "notes": "Mistral chicane bootstrap candidate. Clear heavy braking event and high arrival speed make this one of the most important early Paul Ricard candidates. On 2026-09-07 the driver confirmed moving the existing start and LICO window 75 m earlier, to 195 m before the unchanged brake reference. This approximate capture margin remains provisional pending telemetry review; it is not a recommended lift distance. Rebuild derived passes, priors and models before use."
     },
     {
       "zone_id": "pr_t11",
@@ -94,15 +94,15 @@
       "zone_id": "pr_t12",
       "turn_numbers": [12],
       "display_label": "T12",
-      "start_distance_m": 4562.944824,
-      "lico_window_start_m": 4562.944824,
+      "start_distance_m": 4582.944824,
+      "lico_window_start_m": 4582.944824,
       "brake_reference_m": 4682.944824,
-      "end_distance_m": 4942.944824,
+      "end_distance_m": 4882.944824,
       "lico_eligible": true,
       "optimization_role": "candidate",
       "validation_end_rule": "manual_distance",
       "review_status": "driver_reviewed",
-      "notes": "Follow-on technical braking event after T11. Keep as a separate candidate for now so controlled-random can tell us whether it behaves like a true local opportunity or just section noise."
+      "notes": "Follow-on technical braking event after T11. Reconciled 2026-09-07 per driver checklist: start 100 m before brake, end 200 m after brake. Baseline_01 laps 1-3 include low/zero throttle near the new boundaries; this remains a coupled-section diagnostic requiring caution, not a validated isolated response. Preserve zero-throttle flags in readiness and model review."
     },
     {
       "zone_id": "pr_t14",

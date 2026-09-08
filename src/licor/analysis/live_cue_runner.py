@@ -6,6 +6,8 @@ from typing import Any
 
 import polars as pl
 
+from licor.analysis.live_plan import empty_live_cue_plan_frame
+
 
 @dataclass(frozen=True)
 class LiveCueRunnerConfig:
@@ -20,7 +22,8 @@ class LiveCueRunnerConfig:
 def load_live_cue_plan(path: str | Path) -> pl.DataFrame:
     """Load an exported live cue plan and validate the minimum runtime columns."""
 
-    plan = pl.read_csv(path)
+    # Empty optional numeric columns otherwise infer as String on CSV round-trip.
+    plan = pl.read_csv(path, schema_overrides=empty_live_cue_plan_frame().schema)
     _validate_live_cue_plan(plan)
     return plan
 

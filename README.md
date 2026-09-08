@@ -6,18 +6,24 @@ LICOR is a telemetry analysis project for Le Mans Ultimate. Its goal is to help 
 
 ## Current Status
 
-Early prototype.
+Research prototype with an implemented offline Spa LMP2 pipeline, a static
+LMU audio-cue runner, and an initial Paul Ricard transfer bootstrap.
 
-The current focus is offline telemetry analysis for:
+The September 2026 priority is reproducible Paul Ricard pilot preparation and
+empirical validation of fuel/time predictions. Static cue timing has initial
+Spa validation; predictive accuracy, adaptive benefit, and learned cross-circuit
+transfer remain unproven.
 
-- Le Mans Ultimate
-- LMP2
-- Spa
-- recorded telemetry files
+Start with [the roadmap](docs/roadmap.md) and
+[the restart plan](docs/restart_plan_2026-09.md).
+
+The rebuilt Paul static pack is ready for a prospective pilot; use the
+[French run sheet](docs/paul_ricard_static_pilot_run_sheet.md) for preflight and
+the 5–7-lap sequence. Its predicted gains still need driving validation.
 
 ## MVP
 
-The first version will:
+The offline implementation can:
 
 - load telemetry files
 - normalize LMU telemetry channels
@@ -29,9 +35,8 @@ The first version will:
 
 ## Not Included Yet
 
-- live telemetry
-- audio cues
-- machine learning
+- validated adaptive live recommendations
+- validated learned transfer between circuits, drivers, or setups
 - race overlay
 
 ## Documentation
@@ -59,7 +64,7 @@ See:
 
 This project uses Python.
 
-Planned core tools:
+Project tools:
 
 - Polars
 - DuckDB

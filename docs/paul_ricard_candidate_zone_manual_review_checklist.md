@@ -10,6 +10,48 @@ Goal:
 
 This is a **light review**, not a final zone signoff.
 
+## Restart decisions — 2026-09-07
+
+The roster below preserves the original review coordinates. The driver has
+confirmed an additional 75 m upstream margin for the T03 and T08-T09 starts,
+relative to their existing starts (not 75 m before braking):
+
+| Zone | Previous start | Updated start and LICO window | Brake reference |
+| --- | ---: | ---: | ---: |
+| T03 | 1069.949707 m | 994.949707 m | 1189.949707 m |
+| T08-T09 | 2686.660889 m | 2611.660889 m | 2806.660889 m |
+
+Both windows now start 195 m before braking. The 75 m margin is approximate;
+the driver prefers capturing an early lift to truncating it. Existing telemetry
+summaries show maximum detected lifts near the old 120 m limit (T03: 118.5 m;
+T08-T09: 119.3 m). This supports checking for truncation, but does not validate
+the newly added segment or authorize a 195 m lift recommendation.
+
+The zone JSON also now applies the original T01 start request (another 120 m
+upstream, start 249.138794 m), T03 end +50 m (1319.949707 m), and T12 request
+(start 4582.944824 m, end 4882.944824 m). Brake references are unchanged.
+Raw baseline_push_01 laps 1–3 show full throttle/no brake near the revised
+T01/T03/T08 starts. T03 ends before the next brake reference at 1338.74 m;
+its coverage overlaps validation-only T05, so candidate-only disjoint zones
+must be used for additive lap sanity. T12 still includes zero throttle near
+its boundaries; retain those flags and treat its section coupling cautiously.
+Historical outputs in `paul_ricard_transfer_v1` predate these edits. The new
+pilot pipeline writes separate artifacts in `paul_ricard_pilot_2026_09`.
+
+The accepted pilot workflow is one static plan throughout the run. Adaptive
+changes will be computed afterwards from recorded telemetry and execution
+logs; an adaptive process does not need to run during driving. Replay must
+only use information available up to each simulated decision. It can assess
+the proposed changes and their stability, but cannot establish their actual
+fuel/time benefit without executing them.
+
+The driver can provide 5–7 consecutive clean laps, with tire wear disabled;
+simulator time is the limiting resource. Cue execution and fuel/time prediction
+can be assessed in the same run. If seven scored laps are available, the
+proposed sequence is push / LICO / LICO / push / LICO / LICO / push, after the
+outlap. This balances mean lap position between conditions, while fuel-load
+drift and other time trends still need to be considered in analysis.
+
 ## How To Use It
 
 For each candidate zone, answer only these three questions:

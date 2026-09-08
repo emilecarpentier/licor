@@ -55,6 +55,27 @@ be required by the analysis pipeline.
 | `tyre_wear_pct_rl` | `Tyres Wear.value3` | % | Wheel ordering must be confirmed. |
 | `tyre_wear_pct_rr` | `Tyres Wear.value4` | % | Wheel ordering must be confirmed. |
 
+## Static pilot live logs — September 2026
+
+The optional static runtime lap gate uses absolute shared-memory lap numbers.
+`--cue-laps` selects laps with audio enabled; other laps still produce crossing
+events with `cue_enabled=false`. Treat these as muted diagnostic crossings, not
+missed or emitted cues. The runtime accuracy summary includes enabled events
+only. An enabled event records a software trigger, not confirmed human hearing.
+
+`--stop-after-lap` ends the run on the first sample with a greater lap number,
+before triggering cues in that next lap. With `--telemetry-log`, samples from
+push, LICO and outlap roles are preserved with the available fuel, speed,
+throttle, brake and gear channels. Preserve the native `.duckdb` as well for
+complete events, quality review and timestamp reconciliation.
+
+The Paul launcher freezes the resolved absolute lap schedule, audio setting and
+plan hash in session files. Post-run analysis must join events and telemetry to
+that schedule rather than infer treatment from whether a cue event exists.
+See [the pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the predeclared
+comparison method. Historical unscheduled live logs may lack `cue_enabled`;
+retain their original all-laps behavior when interpreting those sessions.
+
 ## Core Raw Channels
 
 - Fuel Level

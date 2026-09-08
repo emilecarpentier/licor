@@ -10,6 +10,32 @@ A machine-readable mirror of the current working lap labels lives at
 v1 snapshot. Keep this document as the human source of driver context, and
 update the JSON used by the pipeline when lap labels change.
 
+## Paul Ricard reconstruction — 2026-09-07
+
+The Paul sidecar is `config/datasets/paul_ricard_lmp2_2026-09-07.json`, with a
+retrospective collection protocol and explicit zone review in the matching
+config directories. It rebuilds two push recordings (May 31) and two varied-LICO
+recordings (June 1) from raw files in `data/`.
+
+All 31 completed laps and 279 all-zone passes remain in audit outputs. Modeling
+uses 25 laps and 150 candidate passes, including the explicit baseline_02 lap13
+T03 exclusion. Baseline_02 lap12 remains excluded; lap14 remains context pending
+late-sector review. Lap13 other zones are restored instead of silently omitting
+the whole lap as the old modeling CSV did. The clean whole-lap baseline stays
+at nine laps. Historical tire wear and randomization seed are unknown.
+
+Readiness flags remain visible: T11 has detected lifts in five of ten baseline
+passes, T12 in one; the curve builder excludes these passes from local baseline.
+T08 has one lift reaching the widened 195 m window boundary. Its selected pilot
+distance is about 94.5 m, supported locally; the far tail remains uncertain.
+The raw impact field is Boolean, so no physical impact magnitude is inferred.
+
+Use `scripts/build_paul_ricard_intake.py`, then the pilot plan/pack builders.
+New outputs live under `data/processed/experimental/paul_ricard_pilot_2026_09`.
+Raw/config/code/output hashes guard against stale inputs. Historical outputs
+under `paul_ricard_transfer_v1` are preserved. See
+[the pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the next recording.
+
 ## Label Meaning
 
 The labels `none`, `low`, `medium`, and `high` are collection conditions, not

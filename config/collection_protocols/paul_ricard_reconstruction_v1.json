@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "protocol_id": "paul_ricard_lmp2_reconstruction_v1",
+  "dataset_id": "paul_ricard_lmp2_2026-09-07",
+  "track_name": "Circuit Paul Ricard", "car_class": "LMP2_ELMS",
+  "purpose": "Retrospective metadata contract for existing baseline and variable-lift runs. Describes historical evidence, not a prospectively randomized experiment or predictive validation.",
+  "sessions": [
+    {"session_id": "baseline", "collection_design": "baseline", "objective": "Retain the original 9 clean whole-lap baselines and recover unaffected zones of reviewed lap13.", "minimum_clean_laps": 9, "target_zones": []},
+    {"session_id": "controlled_random", "collection_design": "controlled_random", "objective": "Recover observed continuous lift distances from 15 previously retained driving laps.", "minimum_clean_laps": 15, "target_zones": ["pr_t01_t02", "pr_t03", "pr_t08_t09", "pr_t11", "pr_t12", "pr_t14"], "lico_variation_guidance": "Historical natural variable-lift collection; no random seed or per-lap plan survives."}
+  ]
+}
