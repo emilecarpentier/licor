@@ -72,9 +72,64 @@ complete events, quality review and timestamp reconciliation.
 The Paul launcher freezes the resolved absolute lap schedule, audio setting and
 plan hash in session files. Post-run analysis must join events and telemetry to
 that schedule rather than infer treatment from whether a cue event exists.
+The generated `.cmd` wrapper starts the signed-local `.ps1` with process-scoped
+`ExecutionPolicy Bypass`; it does not change the user or machine policy. The
+launcher reads shared memory immediately before startup, defaults the first
+scored lap to the next absolute lap, and rejects an explicit lap already passed.
 See [the pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the predeclared
 comparison method. Historical unscheduled live logs may lack `cue_enabled`;
 retain their original all-laps behavior when interpreting those sessions.
+
+`scripts/analyze_paul_ricard_live_validation.py` is the frozen Paul post-run
+scorer. It takes a `--session-dir`, verifies the current frozen plan hash and the
+full schedule-by-zone crossing set, applies the runtime distance projection to
+the recorded telemetry, extracts all six candidate-zone passes and compares
+LICO laps with linearly interpolated bracketing push laps. Its default outputs
+are written under `<session-dir>/validation/`:
+
+- `lap_validation.csv`;
+- `zone_execution_observations.csv`;
+- `zone_execution_summary.csv`;
+- `plan_used.csv`;
+- `track_zones_used.json`;
+- `validation_manifest.json`;
+- `validation_report.md`.
+
+These are CSV-only prospective-scoring artifacts, not a replacement for native
+intake. They can establish software cue coverage, trigger-distance accuracy,
+detected lift execution and provisional fuel/time deltas. Track/car identity,
+official lap/event reconciliation, impacts, pit state and final exclusions
+still require the native `.duckdb`, completed operator metadata and a resolved
+driver lap-quality debrief. A debrief that reports unclean laps without their
+numbers cannot support inferred exclusions. `validation_manifest.json` must
+therefore keep `refit_authorized=false` until those gates are satisfied; the
+prospective run must not be added to curve fitting before its frozen predictions
+are evaluated and reviewed.
+
+Session `paul_pilot_20260909_220534` is the first six-zone application of this
+contract: push laps 13/16/19, LICO laps 14/15/17/18, 24 of 24 audible cues in
+tolerance and `1.331 m` maximum absolute trigger error. Projection-aware,
+bracketing-push scoring gives a provisional mean of `0.1584 L` saved and
+`0.3191 s` lost per LICO lap, versus frozen predictions of `0.12855 L` and
+`0.37222 s`. The driver confirmed hearing all 24 cues, which validates the
+operational audio result. LMU telemetry was not active, and the driver cannot
+identify which laps were unclean, so performance scoring is invalid and the run
+is not eligible for refitting.
+
+That session also contains 24 treatment-correlated telemetry gaps of `0.100` to
+`0.129 s`, caused by synchronous system-beep emission. Future live runs emit
+the beep in the background so audio playback does not block sample collection.
+The correction changes future capture only; it must not be applied
+retroactively to conceal gaps in the recorded session.
+
+For sessions with a linked native file, the Paul scorer also writes
+`duckdb_lap_validation.csv`, `duckdb_zone_execution_observations.csv` and
+`duckdb_zone_execution_summary.csv`. The native file must match Paul Ricard and
+the session car class and contain every scheduled lap. Whole-lap driver
+exclusions and zone-specific exclusions are separate: a corner error can remove
+one zone observation without silently discarding unrelated zones from that lap.
+Session `paul_pilot_20260909_232207` exercises this contract with lap23 excluded
+from whole-lap scoring and only T01–T02/23 plus T14/23 excluded at zone level.
 
 ## Core Raw Channels
 
@@ -1020,7 +1075,10 @@ Suggested `live_cue_event_log` fields:
 - `display_label`
 - `cue_trigger_m`
 - `planned_lift_start_m`
-- `actual_cue_distance_m`
+- `actual_cue_distance_m`: effective distance used to fire the cue
+- `raw_lap_distance_m`: latest raw LMU scoring distance
+- `cue_distance_method`: `raw_scoring` or `speed_projected`
+- `distance_projection_age_s`: age of the raw-distance anchor used for projection
 - `cue_error_m`
 - `cue_tolerance_m`
 - `trigger_status`: `fired_on_time`, `fired_late`, or `fired_early`
@@ -1050,6 +1108,13 @@ versioned export contract:
 - only selected LICO zones are exported by default;
 - missing `brake_reference_m` for a selected zone is an error, because a live
   cue plan cannot safely invent the driver reference point.
+
+Selection purpose must be explicit before this export. A `race_strategy` plan
+may legitimately export only the minimum-time zones needed for its sourced fuel
+target. A `prediction_validation` or `collection_coverage` plan must use an
+explicit coverage policy instead of inflating a fuel target merely to force more
+zones. The Paul six-zone profile records `plan_purpose`, `selection_policy` and
+`target_source`; its descriptive fuel/time sum is not a race recommendation.
 
 `build_live_cue_executions_from_zone_passes` creates the first replay-style
 execution table by joining an exported plan to observed `zone_pass` rows. It
@@ -1091,6 +1156,21 @@ The event log is the auditable source of truth. The accuracy log is derived and
 can be regenerated from events. Replay sessions write logs before calling the
 audio adapter, and existing log files are not overwritten unless
 `overwrite_existing_logs` is explicitly enabled.
+
+LMU exposes the scoring lap distance more coarsely than the telemetry speed. In
+the first Paul live session, distance stayed fixed for about `0.20 s` then
+jumped by 13–16 m, making five of six cues appear late despite distance-crossing
+logic. The live runtime now projects distance for at most `0.25 s` between raw
+scoring updates using the mean live speed. The raw distance remains in the
+telemetry log; the event's `actual_cue_distance_m` records the projected trigger
+position used by the runtime.
+Runtime event logs using this projection are schema version 2 and retain the raw
+distance, method, and projection age beside the effective trigger distance. A
+small backward correction when a projected position is replaced by a fresher
+raw scoring value is held monotonic. A decrease larger than half a known track
+length, or 100 m when length is unavailable, is treated as a reset rather than
+projection noise. Recorded replay verification also
+requires every cue to remain within its declared tolerance and in plan order.
 
 ## Cross-Circuit Learning Tables
 

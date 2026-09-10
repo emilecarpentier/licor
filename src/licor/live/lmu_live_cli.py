@@ -23,7 +23,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.bench_beep_only:
-        SystemBeepAudioCueAdapter().emit(
+        SystemBeepAudioCueAdapter(blocking=True).emit(
             AudioCue(
                 plan_id="bench_beep",
                 zone_id="bench",

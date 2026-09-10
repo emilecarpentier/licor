@@ -35,8 +35,10 @@ T01/T03/T08 starts. T03 ends before the next brake reference at 1338.74 m;
 its coverage overlaps validation-only T05, so candidate-only disjoint zones
 must be used for additive lap sanity. T12 still includes zero throttle near
 its boundaries; retain those flags and treat its section coupling cautiously.
-Historical outputs in `paul_ricard_transfer_v1` predate these edits. The new
-pilot pipeline writes separate artifacts in `paul_ricard_pilot_2026_09`.
+Historical outputs in `paul_ricard_transfer_v1` predate these edits. The
+current prediction-validation pipeline writes separate artifacts in
+`paul_ricard_prediction_validation_2026_09`; the original
+`paul_ricard_pilot_2026_09` outputs remain historical.
 
 The accepted pilot workflow is one static plan throughout the run. Adaptive
 changes will be computed afterwards from recorded telemetry and execution

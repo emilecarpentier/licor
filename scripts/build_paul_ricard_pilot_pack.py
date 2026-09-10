@@ -23,7 +23,8 @@ from licor.live.runtime import LiveStaticCueSessionConfig, run_static_live_cue_s
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIR = (
-    PROJECT_ROOT / "data/processed/experimental/paul_ricard_pilot_2026_09"
+    PROJECT_ROOT
+    / "data/processed/experimental/paul_ricard_prediction_validation_2026_09"
 )
 ZONE_CONFIG = PROJECT_ROOT / "config/track_zones/paul_ricard_lmp2_zones.draft.json"
 LAP_PATTERNS = {
@@ -80,8 +81,15 @@ def build_pack(
     if table.validation_issues():
         raise ValueError(f"invalid track-zone definitions: {table.validation_issues()}")
     selected = zone_plan.filter(pl.col("is_selected_for_lico"))
-    if selected.is_empty() or set(selected["plan_status"].to_list()) != {"target_met"}:
-        raise ValueError("pilot requires a nonempty target_met plan")
+    plan_purpose = str(upstream.get("plan_purpose") or "")
+    if (
+        selected.is_empty()
+        or plan_purpose != "prediction_validation"
+        or set(selected["plan_status"].to_list()) != {"coverage_ready"}
+    ):
+        raise ValueError(
+            "pilot requires a nonempty prediction_validation coverage_ready plan"
+        )
     speeds = (
         passes.filter(
             (pl.col("lico_intensity").is_in(["baseline", "none"]))
@@ -107,14 +115,13 @@ def build_pack(
         selected,
         track_zones_to_frame(table),
         config=LiveCuePlanConfig(
-            plan_id="paul_ricard_pilot_static_2026_09",
+            plan_id=str(upstream["plan_id"]),
             track_name=table.track_name,
             car_class=table.car_class,
-            race_context_id="pilot_0.05_l_per_lap_not_race_strategy",
+            race_context_id="prediction_validation_not_race_strategy",
             minimum_confidence_label="pilot_unvalidated",
             cue_latency_compensation_s=0.35,
-            notes="Frozen static pilot. Spa 0.35 s latency transferred provisionally; "
-            "local push brake speed is a proxy. Fuel/time predictions are unvalidated.",
+            notes="Frozen six-zone prediction-validation profile. Spa 0.35 s driver-response latency transferred provisionally; local push brake speed is a proxy. Fuel/time predictions are unvalidated.",
         ),
     )
     if any(
@@ -146,24 +153,32 @@ def build_pack(
         "status": "template_not_collected",
         "track": table.track_name,
         "car_class": table.car_class,
-        "car": "",
-        "driver": "",
-        "setup": "",
+        "car": "project-standard LMP2",
+        "driver": "project owner",
+        "setup": "not considered for this validation",
         "tire_wear_multiplier": 0,
-        "starting_fuel_l": None,
-        "weather_and_track_conditions": "",
+        "starting_fuel_l": 55.0,
+        "weather_and_track_conditions": "driver-controlled constant weather",
         "telemetry_duckdb": "",
         "valid_laps": [],
         "excluded_laps_with_reasons": {},
-        "analysis_note": "Analyze enabled LICO cues separately from muted push crossings. "
-        "Compare achieved zone fuel/time with same-run push laps; no adaptive authority.",
+        "audio_cue_debrief": {"expected": None, "heard": None, "missed": None},
+        "lap_quality_debrief": {
+            "all_laps_clean": None,
+            "affected_laps_known": None,
+            "affected_laps": [],
+            "notes": "",
+        },
+        "analysis_note": "Analyze enabled LICO cues separately from muted push crossings. Compare all six candidate zones with same-run push laps; this is prediction validation, not a race-optimal plan, and has no adaptive authority.",
     }
     (pack_dir / "run_metadata_template.json").write_text(
         json.dumps(metadata, indent=2), encoding="utf-8"
     )
     (pack_dir / "start_pilot.ps1").write_text(_launcher(pack_dir), encoding="utf-8")
+    (pack_dir / "start_pilot.cmd").write_text(_cmd_launcher(), encoding="utf-8")
     for name in ("intake_manifest.json", "plan_manifest.json", "selected_support.csv"):
         (pack_dir / name).write_bytes((input_dir / name).read_bytes())
+    (pack_dir / "track_zones.json").write_bytes(zone_config.read_bytes())
     sources = [
         plan_path,
         passes_path,
@@ -180,9 +195,12 @@ def build_pack(
         if optional.exists():
             sources.append(optional)
     manifest = {
-        "schema_version": 1,
-        "pack_status": "frozen_static_pilot_pending_empirical_validation",
+        "schema_version": 2,
+        "pack_status": "frozen_static_prediction_validation_pending_empirical_validation",
         "plan_id": live_plan["plan_id"][0],
+        "plan_purpose": plan_purpose,
+        "selection_policy": upstream["selection_policy"],
+        "target_source": upstream["target_source"],
         "git_commit": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT, text=True
         ).strip(),
@@ -218,9 +236,11 @@ def build_pack(
             "status": "provisional_transfer_from_spa",
             "speed_source": "median valid local push brake_start_speed_kph proxy",
         },
-        "validation": "Synthetic silent runtime schedule preflight only; no simulator/audio/fuel validation.",
+        "validation": "Synthetic silent runtime schedule preflight only; no six-zone simulator/audio/fuel validation.",
         "adaptive_mode": "offline_after_run_only",
-        "target_fuel_saved_per_lap_l": 0.05,
+        "strategy_reference_target_fuel_saved_per_lap_l": upstream[
+            "strategy_reference_target_fuel_saved_per_lap_l"
+        ],
         "predicted_fuel_saved_per_lap_l": live_plan["expected_fuel_saved_l"].sum(),
         "predicted_time_lost_per_lap_s": live_plan["expected_time_lost_s"].sum(),
     }
@@ -307,6 +327,8 @@ def verify_pack(pack_dir: Path) -> dict:
             path = (base / relative).resolve()
             if not path.is_relative_to(base.resolve()) or sha256_file(path) != expected:
                 raise ValueError(f"frozen pack hash mismatch: {relative}")
+    if manifest.get("schema_version", 0) >= 2:
+        _verify_pack_contract(pack_dir, manifest)
     results = [
         preflight_schedule(pack_dir / "plan.csv", count) for count in LAP_PATTERNS
     ]
@@ -317,12 +339,37 @@ def verify_pack(pack_dir: Path) -> dict:
     }
 
 
+def _verify_pack_contract(pack_dir: Path, manifest: dict) -> None:
+    plan = pl.read_csv(pack_dir / "plan.csv")
+    upstream = json.loads((pack_dir / "plan_manifest.json").read_text(encoding="utf-8"))
+    plan_ids = plan["plan_id"].unique().to_list()
+    if plan_ids != [manifest["plan_id"]] or manifest["plan_id"] != upstream["plan_id"]:
+        raise ValueError("pack manifest plan_id disagrees with plan lineage")
+    for field in ("plan_purpose", "selection_policy", "target_source"):
+        if manifest[field] != upstream[field]:
+            raise ValueError(f"pack manifest {field} disagrees with plan lineage")
+    if set(plan["zone_id"].to_list()) != set(upstream["selected_zones"]):
+        raise ValueError("pack plan zones disagree with plan lineage")
+    for manifest_field, plan_column in (
+        ("predicted_fuel_saved_per_lap_l", "expected_fuel_saved_l"),
+        ("predicted_time_lost_per_lap_s", "expected_time_lost_s"),
+    ):
+        if not math.isclose(
+            float(manifest[manifest_field]),
+            float(plan[plan_column].sum()),
+            rel_tol=1e-9,
+            abs_tol=1e-9,
+        ):
+            raise ValueError(f"pack manifest {manifest_field} disagrees with plan")
+
+
 def _launcher(pack_dir: Path) -> str:
     relative_root = Path(os.path.relpath(PROJECT_ROOT, pack_dir)).as_posix()
     return """param(
-    [Parameter(Mandatory=$true)][ValidateRange(0,9999)][int]$FirstScoredLap,
+    [ValidateRange(0,9999)][Nullable[int]]$FirstScoredLap = $null,
     [ValidateSet(5,6,7)][int]$ScoredLaps = 6,
     [ValidatePattern('^[A-Za-z0-9_-]+$')][string]$RunId = ('paul_pilot_' + (Get-Date -Format 'yyyyMMdd_HHmmss')),
+    [switch]$ConfirmTelemetryRecording,
     [switch]$EmitSystemBeep
 )
 $ErrorActionPreference = 'Stop'
@@ -330,8 +377,32 @@ $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '__ROOT__')).Path
 $python = Join-Path $projectRoot '.venv/Scripts/python.exe'
 Push-Location $projectRoot
 try {
+    if (-not $ConfirmTelemetryRecording) {
+        throw 'Telemetry confirmation missing. Start LMU telemetry recording, then relaunch with -ConfirmTelemetryRecording.'
+    }
+    $telemetryDir = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Le Mans Ultimate\\UserData\\Telemetry'
+    if (-not (Test-Path -LiteralPath $telemetryDir)) {
+        throw "LMU telemetry directory not found: $telemetryDir"
+    }
+    $telemetryStartedAt = Get-Date
     & $python scripts/build_paul_ricard_pilot_pack.py --verify-only --pack-dir $PSScriptRoot
     if ($LASTEXITCODE -ne 0) { throw 'Pack preflight failed.' }
+    $lapProbe = @(& $python scripts/run_lmu_live_cues.py --show-current-lap)
+    if ($LASTEXITCODE -ne 0) { throw 'Could not read the current LMU lap. Enter the car and retry.' }
+    $lapProbeText = $lapProbe -join [Environment]::NewLine
+    Write-Host $lapProbeText
+    if ($lapProbeText -notmatch 'absolute_lap_number=(?<lap>-?[0-9]+) lap_distance_m=(?<distance>-?[0-9]+(?:[.][0-9]+)?)') {
+        throw 'Could not parse the current absolute LMU lap.'
+    }
+    $nextLap = [int]$Matches['lap'] + 1
+    if ($null -eq $FirstScoredLap) {
+        $FirstScoredLap = $nextLap
+        Write-Host "FirstScoredLap auto-detected as $FirstScoredLap. Start before the next start/finish crossing."
+    } elseif ($FirstScoredLap -lt $nextLap) {
+        throw "FirstScoredLap=$FirstScoredLap is already in the past. Current absolute lap is $($Matches['lap']); use $nextLap or omit -FirstScoredLap."
+    } elseif ($FirstScoredLap -gt $nextLap) {
+        Write-Host "FirstScoredLap=$FirstScoredLap is later than the next lap $nextLap; intervening laps will remain silent."
+    }
     $patterns = @{5=@('push','lico','push','lico','push');6=@('push','lico','lico','push','push','lico');7=@('push','lico','lico','push','lico','lico','push')}
     $schedule = @(for ($i = 0; $i -lt $ScoredLaps; $i++) {
         [pscustomobject]@{scored_index=$i+1;lap_number=$FirstScoredLap+$i;role=$patterns[$ScoredLaps][$i];cue_enabled=($patterns[$ScoredLaps][$i] -eq 'lico');fuel_start_l='';cue_missed='';traffic_or_error='';notes=''}
@@ -343,6 +414,10 @@ try {
     $schedule | Export-Csv -LiteralPath (Join-Path $sessionDir 'lap_schedule.csv') -NoTypeInformation -Encoding UTF8
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'run_metadata_template.json') -Destination $sessionDir
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'pack_manifest.json') -Destination $sessionDir
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'plan.csv') -Destination $sessionDir
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'plan_manifest.json') -Destination $sessionDir
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'selected_support.csv') -Destination $sessionDir
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'track_zones.json') -Destination $sessionDir
     $resolvedConfig = @{run_id=$RunId;first_scored_lap=$FirstScoredLap;scored_laps=$ScoredLaps;cue_laps=$cueLaps;stop_after_lap=$FirstScoredLap+$ScoredLaps-1;emit_system_beep=[bool]$EmitSystemBeep;plan_sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot 'plan.csv')).Hash;telemetry_log='telemetry.csv';operator_mode='static';adaptive_mode='offline_after_run_only'}
     $resolvedConfig | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $sessionDir 'session_config.json') -Encoding UTF8
     $schedule | Format-Table
@@ -351,8 +426,30 @@ try {
     if ($EmitSystemBeep) { $liveArgs += '--emit-system-beep' }
     & $python @liveArgs
     if ($LASTEXITCODE -ne 0) { throw 'Live session exited with an error; preserve logs.' }
+    $newTelemetry = Get-ChildItem -LiteralPath $telemetryDir -Filter '*.duckdb' |
+        Where-Object LastWriteTime -ge $telemetryStartedAt.AddSeconds(-5) |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($null -eq $newTelemetry) {
+        Write-Warning 'No new LMU .duckdb was found. Stop/export the telemetry recorder, then link the file in run_metadata_template.json before analysis.'
+    } else {
+        $metadataPath = Join-Path $sessionDir 'run_metadata_template.json'
+        $metadata = Get-Content -LiteralPath $metadataPath | ConvertFrom-Json
+        $metadata.telemetry_duckdb = $newTelemetry.FullName
+        $metadata.status = 'session_recorded_pending_lap_review'
+        $metadata | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $metadataPath -Encoding UTF8
+        Write-Host "Linked LMU telemetry: $($newTelemetry.FullName)"
+    }
 } finally { Pop-Location }
 """.replace("__ROOT__", relative_root)
+
+
+def _cmd_launcher() -> str:
+    return """@echo off
+setlocal
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0start_pilot.ps1" %*
+exit /b %errorlevel%
+"""
 
 
 def main() -> int:

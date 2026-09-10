@@ -4,7 +4,7 @@ Use this roadmap as the main handoff document for future Codex sessions. Start
 new work from the active priorities below, keep edits small, and update this
 file whenever the strategy changes meaningfully.
 
-## Active Priorities — 2026-09-07
+## Active Priorities — 2026-09-10
 
 The [September restart plan](restart_plan_2026-09.md) is the current execution
 plan. It supersedes the historical sequencing below. Historical completion
@@ -12,19 +12,51 @@ marks describe implemented artifacts, not proof of predictive performance.
 
 1. Reconcile Paul Ricard zone boundaries and rebuild the pipeline from raw
    telemetry with dataset metadata and artifact provenance.
-2. Prepare a frozen static pilot pack and a 5–7 clean-lap collection protocol.
-3. Validate cue execution and fuel/time predictions in that run; inspect
-   adaptive recommendations afterwards using only past information.
-4. Establish grouped held-out evaluation and calibrated uncertainty.
-5. Benchmark low-data transfer, then expand circuit diversity and test a
-   hierarchical model before considering adaptive live authority.
+2. Prepare a frozen six-zone prediction-validation pack and a 5–7 clean-lap
+   collection protocol, separate from race-strategy target optimization.
+3. Preserve the finalized five-lap confirmation as held-out validation evidence
+   rather than refitting it; the driver heard all 12 cues.
+4. Build the pooled ML table, grouped split manifest and simple leakage-safe
+   baselines. Treat the two Spa↔Paul folds as diagnostic stress tests only.
+5. Collect two additional same-LMP2 circuits with a short frozen protocol, then
+   run meaningful leave-one-circuit-out low-data benchmarks before considering
+   a hierarchical model or adaptive live authority.
 
 Confirmed: T03 and T08-T09 starts have moved 75 m upstream, tire wear is disabled
-for the pilot, and simulator time is the collection constraint. Paul artifacts
-have now been rebuilt from the four raw recordings and a frozen static pack
-passes synthetic and recorded-telemetry replay checks. Use the
-[pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the next 5–7-lap
-session. Fuel/time accuracy and actual Paul audio execution remain to be measured.
+for the pilot, and simulator time is the collection constraint. The first
+two-zone run exposed an objective mismatch: the `0.05 L/lap` minimum-time
+strategy plan was not an adequate validation roster. Paul artifacts have now
+been rebuilt from the four raw recordings into a distinct six-zone
+prediction-validation pack. The live runtime also projects between LMU's coarse
+scoring-distance updates. Synthetic and recorded-telemetry replay checks pass.
+The first seven-lap six-zone session, `paul_pilot_20260909_220534`, is now
+recorded with push laps 13/16/19 and LICO laps 14/15/17/18. All 24 expected
+audible cues were in tolerance; the maximum absolute trigger error was
+`1.331 m`. Projection-aware bracketing-push analysis provisionally measures
+`0.1584 L` saved and `0.3191 s` lost per LICO lap, versus the frozen plan's
+`0.12855 L` and `0.37222 s`. The driver confirmed hearing all 24 cues, so the
+operational cue/audio verdict passes. Telemetry recording was not active and
+some unclean laps cannot now be identified; the fuel/time result is unscorable
+and no refit is authorized. The next simulator step is a five-lap P/L/P/L/P
+confirmation run with a native DuckDB and immediate lap-quality notes. The 24 beep-correlated
+sampling gaps of `0.100` to `0.129 s` remain a limitation of this recording;
+the beep has been moved to background emission for future runs. The two-zone
+pack/session remain frozen as separate prospective history. See the
+[pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the exact post-run
+command and result contract.
+
+The five-lap confirmation `paul_pilot_20260909_232207` is complete on absolute
+laps 22–26 with its native DuckDB. Lap23 is excluded from whole-lap scoring
+after driver-reported T1 and probable T13 errors; T01–T02/23 and T14/23 are
+excluded at zone level while its other zones remain available. The one clean
+LICO lap saved `0.1823 L` for `0.6800 s`, compared with `0.12855 L` and
+`0.37222 s` predicted. Ten zone observations remain included. Treat this as
+authoritative but low-sample held-out evidence: no refit is authorized. All 12
+cues were heard. Reconciliation against the full four-run Paul history rates
+T03 and T11 robust for the tested profile, T01–T02 and T08–T09 promising, T12
+unstable on time cost, and T14 insufficient. The next data budget therefore
+targets circuit diversity rather than broad Paul repetition; see the
+[2026-09-10 decision record](decision_record_2026-09-10_cross_circuit.md).
 
 The initial generalization target is circuits within the same LMP2 vehicle.
 Drivers and setups are later calibration dimensions; cross-vehicle/category
@@ -530,9 +562,10 @@ Current interpretation:
 ## Recommended Next Codex Task
 
 ```text
-Run the operator preflight and static Paul pilot using
-docs/paul_ricard_static_pilot_run_sheet.md. On return, intake the raw recording and
-session logs, score the frozen predictions before any refit, then audit adaptive
-decisions offline. Stage A software preparation is complete; grouped predictive
-evaluation and transfer ML remain later gates.
+Build a pooled run/lap/zone ML table and a leakage-safe grouped evaluation
+harness without refitting `paul_pilot_20260909_232207`. Compare the local curve,
+the heuristic archetype and a simple pooled regularized/monotone baseline. Fit
+baselines and transforms inside each fold, group by whole run/circuit, and label
+Spa↔Paul results as diagnostic stress tests. Then freeze the first circuit-C
+zero-LICO-shot prediction and its short collection protocol.
 ```

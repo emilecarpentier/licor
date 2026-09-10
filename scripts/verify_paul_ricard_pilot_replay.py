@@ -172,10 +172,28 @@ def verify_recorded_replay(
         != expected_audio
     ):
         raise AssertionError("Enabled event log differs from recorded audio calls")
+    timing_failures = events.filter(
+        pl.col("cue_error_m").abs() > pl.col("cue_tolerance_m")
+    )
+    if timing_failures.height:
+        raise AssertionError(
+            "Recorded replay emitted cues outside their declared distance tolerance: "
+            f"{timing_failures.select('lap_number', 'zone_id', 'cue_error_m').rows()}"
+        )
+    expected_zone_order = plan.sort("cue_distance_m")["zone_id"].to_list()
+    for lap_number in range(8):
+        actual_zone_order = events.filter(pl.col("lap_number") == lap_number)[
+            "zone_id"
+        ].to_list()
+        if actual_zone_order != expected_zone_order:
+            raise AssertionError(
+                f"Recorded replay cue order differs on lap {lap_number}: "
+                f"{actual_zone_order}"
+            )
     if not source.closed:
         raise AssertionError("Recorded sample source was not closed")
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "check_status": "passed",
         "validation_scope": "Software distance-crossing, lap gating, deduplication and termination on recorded telemetry. Historical driving did not execute this plan; no fuel/time efficacy or audible human-response validation.",
         "raw_source": {
@@ -192,6 +210,8 @@ def verify_recorded_replay(
         "zone_count": plan.height,
         "logged_crossings": events.height,
         "recorded_audio_calls": len(actual_audio),
+        "timing_gate": "abs(cue_error_m) <= cue_tolerance_m for every crossing",
+        "order_gate": "cue order equals ascending plan cue_distance_m on every lap",
         "enabled_cue_max_abs_error_m": events.filter(pl.col("cue_enabled"))[
             "cue_error_m"
         ]

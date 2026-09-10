@@ -130,6 +130,78 @@ def test_static_live_session_logs_fuel_on_muted_and_enabled_laps(tmp_path: Path)
     assert pl.read_csv(tmp_path / "events_accuracy.csv")["cue_count"].sum() == 1
 
 
+def test_static_live_session_projects_between_coarse_scoring_distance_updates(
+    tmp_path: Path,
+):
+    plan_path = tmp_path / "plan.csv"
+    _plan().filter(pl.col("zone_id") == "t01").write_csv(plan_path)
+    samples = [
+        LmuLiveTelemetrySample(
+            lap_number=1,
+            lap_distance_m=340.0,
+            ts=10.0 + offset,
+            elapsed_s=10.0 + offset,
+            speed_kph=180.0,
+        )
+        for offset in (0.0, 0.1, 0.22)
+    ]
+
+    events = run_static_live_cue_session(
+        plan_path=plan_path,
+        event_log_path=tmp_path / "events.csv",
+        sample_source=_ListSampleSource(samples),
+        config=LiveStaticCueSessionConfig(write_accuracy_log=False),
+    )
+
+    assert events.height == 1
+    assert events["schema_version"][0] == 2
+    assert events["actual_cue_distance_m"][0] == pytest.approx(351.0)
+    assert events["raw_lap_distance_m"][0] == pytest.approx(340.0)
+    assert events["cue_distance_method"][0] == "speed_projected"
+    assert events["distance_projection_age_s"][0] == pytest.approx(0.22)
+    assert events["cue_error_m"][0] == pytest.approx(1.0)
+    assert events["trigger_status"][0] == "fired_on_time"
+
+
+def test_distance_projection_does_not_create_a_preemptive_lap_wrap(tmp_path: Path):
+    plan_path = tmp_path / "plan.csv"
+    _plan().filter(pl.col("zone_id") == "start").write_csv(plan_path)
+    samples = [
+        LmuLiveTelemetrySample(1, 6995.0, 10.0, 10.0, speed_kph=180.0),
+        LmuLiveTelemetrySample(1, 6995.0, 10.2, 10.2, speed_kph=180.0),
+        LmuLiveTelemetrySample(2, 0.0, 10.21, 10.21, speed_kph=180.0),
+        LmuLiveTelemetrySample(2, 0.0, 10.43, 10.43, speed_kph=180.0),
+    ]
+
+    events = run_static_live_cue_session(
+        plan_path=plan_path,
+        event_log_path=tmp_path / "events.csv",
+        sample_source=_ListSampleSource(samples),
+        config=LiveStaticCueSessionConfig(write_accuracy_log=False),
+    )
+
+    assert events.select("lap_number", "zone_id").rows() == [(2, "start")]
+
+
+def test_scoring_refresh_regression_does_not_trigger_future_cues(tmp_path: Path):
+    plan_path = tmp_path / "plan.csv"
+    _plan().write_csv(plan_path)
+    samples = [
+        LmuLiveTelemetrySample(1, 300.0, 10.0, 10.0, speed_kph=180.0),
+        LmuLiveTelemetrySample(1, 300.0, 10.2, 10.2, speed_kph=180.0),
+        LmuLiveTelemetrySample(1, 305.0, 10.21, 10.21, speed_kph=180.0),
+    ]
+
+    events = run_static_live_cue_session(
+        plan_path=plan_path,
+        event_log_path=tmp_path / "events.csv",
+        sample_source=_ListSampleSource(samples),
+        config=LiveStaticCueSessionConfig(write_accuracy_log=False),
+    )
+
+    assert events.is_empty()
+
+
 def _plan() -> pl.DataFrame:
     return pl.DataFrame(
         [

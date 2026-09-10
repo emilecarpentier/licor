@@ -16,6 +16,10 @@ from licor.live.audio import AudioCue, AudioCueAdapter, NullAudioCueAdapter
 from licor.live.lmu_shared_memory import LmuLiveTelemetrySample, LMUSharedMemoryReader
 
 
+_MAX_SCORING_DISTANCE_PROJECTION_S = 0.25
+_UNKNOWN_TRACK_WRAP_THRESHOLD_M = 100.0
+
+
 @dataclass(frozen=True)
 class LiveStaticCueSessionConfig(LiveCueRunnerConfig):
     update_timeout_ms: int = 250
@@ -167,7 +171,8 @@ class _LiveCueRuntime:
         self._cues = list(live_cue_plan.sort("cue_distance_m").iter_rows(named=True))
         self._track_length_m = _track_length_m(live_cue_plan, config.track_length_m)
         self._triggered_by_lap: dict[int, set[tuple[str, str]]] = {}
-        self._previous_by_lap: dict[int, LmuLiveTelemetrySample] = {}
+        self._distance_anchor_by_lap: dict[int, LmuLiveTelemetrySample] = {}
+        self._previous_distance_by_lap: dict[int, float] = {}
         self._sample_index = 0
         self._event_count = 0
         self._first_lap_number: int | None = None
@@ -187,7 +192,23 @@ class _LiveCueRuntime:
         ):
             return []
 
-        previous_sample = self._previous_by_lap.get(sample.lap_number)
+        (
+            effective_distance_m,
+            distance_anchor,
+            distance_method,
+            projection_age_s,
+        ) = _effective_lap_distance_m(
+            sample,
+            anchor=self._distance_anchor_by_lap.get(sample.lap_number),
+            track_length_m=self._track_length_m,
+        )
+        self._distance_anchor_by_lap[sample.lap_number] = distance_anchor
+        previous_distance_m = self._previous_distance_by_lap.get(sample.lap_number)
+        effective_distance_m = _stabilize_effective_lap_distance_m(
+            effective_distance_m,
+            previous_distance_m=previous_distance_m,
+            track_length_m=self._track_length_m,
+        )
         triggered_zones = self._triggered_by_lap.setdefault(sample.lap_number, set())
         events: list[dict[str, object]] = []
 
@@ -197,10 +218,8 @@ class _LiveCueRuntime:
                 continue
             if not _should_trigger_cue(
                 cue_distance_m=float(cue["cue_distance_m"]),
-                previous_distance_m=None
-                if previous_sample is None
-                else previous_sample.lap_distance_m,
-                current_distance_m=sample.lap_distance_m,
+                previous_distance_m=previous_distance_m,
+                current_distance_m=effective_distance_m,
                 track_length_m=self._track_length_m,
                 max_initial_late_distance_m=self._config.max_initial_late_distance_m,
             ):
@@ -209,6 +228,9 @@ class _LiveCueRuntime:
             event = _cue_event_row(
                 cue,
                 sample,
+                actual_cue_distance_m=effective_distance_m,
+                cue_distance_method=distance_method,
+                distance_projection_age_s=projection_age_s,
                 sample_index=self._sample_index,
                 config=self._config,
                 track_length_m=self._track_length_m,
@@ -217,7 +239,7 @@ class _LiveCueRuntime:
             self._event_count += 1
 
         self._sample_index += 1
-        self._previous_by_lap[sample.lap_number] = sample
+        self._previous_distance_by_lap[sample.lap_number] = effective_distance_m
         return events
 
     def should_stop(self) -> bool:
@@ -247,6 +269,9 @@ def _cue_event_row(
     cue: dict[str, object],
     sample: LmuLiveTelemetrySample,
     *,
+    actual_cue_distance_m: float,
+    cue_distance_method: str,
+    distance_projection_age_s: float,
     sample_index: int,
     config: LiveStaticCueSessionConfig,
     track_length_m: float | None,
@@ -256,12 +281,12 @@ def _cue_event_row(
         cue.get("cue_tolerance_m") or config.default_cue_tolerance_m
     )
     cue_error_m = _signed_distance_delta_m(
-        sample.lap_distance_m,
+        actual_cue_distance_m,
         cue_distance_m,
         track_length_m=track_length_m,
     )
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "plan_id": str(cue["plan_id"]),
         "file_name": config.file_name,
         "run_id": config.run_id,
@@ -270,7 +295,10 @@ def _cue_event_row(
         "display_label": str(cue["display_label"]),
         "cue_trigger_m": cue_distance_m,
         "planned_lift_start_m": float(cue["planned_lift_start_m"]),
-        "actual_cue_distance_m": sample.lap_distance_m,
+        "actual_cue_distance_m": actual_cue_distance_m,
+        "raw_lap_distance_m": sample.lap_distance_m,
+        "cue_distance_method": cue_distance_method,
+        "distance_projection_age_s": distance_projection_age_s,
         "cue_error_m": cue_error_m,
         "cue_tolerance_m": cue_tolerance_m,
         "trigger_status": _trigger_status(cue_error_m, cue_tolerance_m),
@@ -284,6 +312,60 @@ def _cue_event_row(
         ),
         "notes": str(cue.get("notes") or ""),
     }
+
+
+def _effective_lap_distance_m(
+    sample: LmuLiveTelemetrySample,
+    *,
+    anchor: LmuLiveTelemetrySample | None,
+    track_length_m: float | None,
+) -> tuple[float, LmuLiveTelemetrySample, str, float]:
+    """Project between LMU's coarser scoring-distance updates using live speed."""
+    if anchor is None or abs(sample.lap_distance_m - anchor.lap_distance_m) > 1e-6:
+        return sample.lap_distance_m, sample, "raw_scoring", 0.0
+    if sample.speed_kph is None or sample.speed_kph < 0.0:
+        return sample.lap_distance_m, anchor, "raw_scoring", 0.0
+    elapsed_s = _sample_elapsed_delta_s(sample, anchor)
+    if elapsed_s <= 0.0 or elapsed_s > _MAX_SCORING_DISTANCE_PROJECTION_S:
+        return sample.lap_distance_m, anchor, "raw_scoring", 0.0
+    anchor_speed_kph = (
+        sample.speed_kph
+        if anchor.speed_kph is None or anchor.speed_kph < 0.0
+        else anchor.speed_kph
+    )
+    mean_speed_ms = ((anchor_speed_kph + sample.speed_kph) / 2.0) / 3.6
+    projected_m = sample.lap_distance_m + mean_speed_ms * elapsed_s
+    if track_length_m is not None:
+        projected_m = min(projected_m, track_length_m)
+    return projected_m, anchor, "speed_projected", elapsed_s
+
+
+def _stabilize_effective_lap_distance_m(
+    current_distance_m: float,
+    *,
+    previous_distance_m: float | None,
+    track_length_m: float | None,
+) -> float:
+    """Ignore small backward scoring corrections without hiding a real lap wrap."""
+    if previous_distance_m is None or current_distance_m >= previous_distance_m:
+        return current_distance_m
+    backward_delta_m = previous_distance_m - current_distance_m
+    wrap_threshold_m = (
+        track_length_m / 2.0
+        if track_length_m is not None
+        else _UNKNOWN_TRACK_WRAP_THRESHOLD_M
+    )
+    if backward_delta_m > wrap_threshold_m:
+        return current_distance_m
+    return previous_distance_m
+
+
+def _sample_elapsed_delta_s(
+    sample: LmuLiveTelemetrySample, anchor: LmuLiveTelemetrySample
+) -> float:
+    if sample.elapsed_s is not None and anchor.elapsed_s is not None:
+        return float(sample.elapsed_s - anchor.elapsed_s)
+    return float(sample.ts - anchor.ts)
 
 
 def _should_trigger_cue(
@@ -394,6 +476,9 @@ _LIVE_CUE_EVENT_LOG_COLUMNS = [
     "cue_trigger_m",
     "planned_lift_start_m",
     "actual_cue_distance_m",
+    "raw_lap_distance_m",
+    "cue_distance_method",
+    "distance_projection_age_s",
     "cue_error_m",
     "cue_tolerance_m",
     "trigger_status",
@@ -416,6 +501,9 @@ _LIVE_CUE_EVENT_LOG_SCHEMA = {
     "cue_trigger_m": pl.Float64,
     "planned_lift_start_m": pl.Float64,
     "actual_cue_distance_m": pl.Float64,
+    "raw_lap_distance_m": pl.Float64,
+    "cue_distance_method": pl.String,
+    "distance_projection_age_s": pl.Float64,
     "cue_error_m": pl.Float64,
     "cue_tolerance_m": pl.Float64,
     "trigger_status": pl.String,

@@ -44,7 +44,7 @@ def test_replay_cli_supports_bench_beep_only():
 
     adapter = _RecordingBeepAdapter()
     original = replay_cli.SystemBeepAudioCueAdapter
-    replay_cli.SystemBeepAudioCueAdapter = lambda: adapter
+    replay_cli.SystemBeepAudioCueAdapter = lambda **kwargs: adapter
     try:
         assert replay_cli.main(["--bench-beep-only"]) == 0
     finally:

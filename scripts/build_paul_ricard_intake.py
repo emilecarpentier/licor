@@ -26,7 +26,7 @@ from licor.analysis.zone_pass import ZonePassConfig, extract_zone_passes
 from licor.ingestion import LmuTelemetryDatabase
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = "data/processed/experimental/paul_ricard_pilot_2026_09"
+DEFAULT_OUTPUT = "data/processed/experimental/paul_ricard_prediction_validation_2026_09"
 DATASET_FILE = "config/datasets/paul_ricard_lmp2_2026-09-07.json"
 PROTOCOL_FILE = "config/collection_protocols/paul_ricard_reconstruction_v1.json"
 REVIEW_FILE = "config/driver_reviews/paul_ricard_zone_review_2026-09-07.json"

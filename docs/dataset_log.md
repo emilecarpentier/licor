@@ -26,15 +26,83 @@ at nine laps. Historical tire wear and randomization seed are unknown.
 
 Readiness flags remain visible: T11 has detected lifts in five of ten baseline
 passes, T12 in one; the curve builder excludes these passes from local baseline.
-T08 has one lift reaching the widened 195 m window boundary. Its selected pilot
-distance is about 94.5 m, supported locally; the far tail remains uncertain.
-The raw impact field is Boolean, so no physical impact magnitude is inferred.
+The six candidate models use 143 curve observations after those exclusions:
+T01–T02 25, T03 24, T08–T09 25, T11 20, T12 24 and T14 25. Their selected
+prediction-validation bins contain respectively 5, 6, 3, 6, 9 and 5 LICO
+passes. This is sufficient for a prospective coverage profile, not held-out
+proof. T01's local time signal is nonpositive/noisy and T08's far tail remains
+uncertain. The raw impact field is Boolean, so no physical impact magnitude is
+inferred.
 
 Use `scripts/build_paul_ricard_intake.py`, then the pilot plan/pack builders.
-New outputs live under `data/processed/experimental/paul_ricard_pilot_2026_09`.
+Current outputs live under
+`data/processed/experimental/paul_ricard_prediction_validation_2026_09`.
 Raw/config/code/output hashes guard against stale inputs. Historical outputs
-under `paul_ricard_transfer_v1` are preserved. See
-[the pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the next recording.
+under `paul_ricard_transfer_v1` and the two-zone
+`paul_ricard_pilot_2026_09` pack/session are preserved. See
+[the pilot run sheet](paul_ricard_static_pilot_run_sheet.md) for the operator
+workflow and the first six-zone result.
+
+## Paul Ricard six-zone live validation — 2026-09-09
+
+The prospective session is preserved under
+`data/processed/experimental/paul_ricard_prediction_validation_2026_09/sessions/paul_pilot_20260909_220534`.
+It contains seven scored laps: push laps 13, 16 and 19, and static LICO laps 14,
+15, 17 and 18. All 24 audible crossings were recorded — six zones on each of
+four LICO laps — all were within tolerance, and the maximum absolute trigger
+error was `1.331 m`. The driver subsequently confirmed hearing all 24 cues, so
+the operational audio/cue verdict passes.
+
+The frozen CSV-only evaluator uses the live-runtime distance projection and
+linear interpolation between the bracketing push laps. Its provisional
+whole-lap mean is `0.1584 L` saved and `0.3191 s` lost per LICO lap, compared
+with the frozen plan's `0.12855 L` and `0.37222 s`. These values are descriptive
+only. LMU telemetry recording was not active, so no `.duckdb` exists, and the
+driver recalls unclean laps without being able to identify their lap numbers.
+The performance result is therefore unscorable and cannot authorize a refit.
+
+Run the recorded-session evaluation from the project root with:
+
+```powershell
+.venv\Scripts\python.exe scripts\analyze_paul_ricard_live_validation.py --session-dir .\data\processed\experimental\paul_ricard_prediction_validation_2026_09\sessions\paul_pilot_20260909_220534
+```
+
+The session has 24 cue-correlated sampling gaps between `0.100` and `0.129 s`.
+They were caused by the blocking system-beep call. Audio emission now runs in
+the background for future recordings, but the gaps remain a limitation of this
+session. Keep this run permanently separate from the four-run reconstruction
+dataset for performance fitting. Its valid contribution is the prospective
+operational proof that all six zones can trigger accurately and audibly. The
+earlier two-zone session remains preserved as distinct history.
+
+## Paul Ricard five-lap confirmation — 2026-09-09
+
+Session `paul_pilot_20260909_232207` executed the frozen P/L/P/L/P schedule on
+absolute laps 22–26. The launcher linked the native LMU recording
+`Paul Ricard Circuit_P_2026-09-10T03_22_17Z.duckdb`; its metadata confirms Paul
+Ricard ELMS, Oreca 07 #397, LMP2_ELMS and constant partly cloudy conditions.
+All 12 software cues fired in tolerance with a maximum absolute trigger error
+of `1.513 m`, and the nonblocking beep produced no cue-correlated live-CSV gaps.
+
+Driver review identifies errors on the first LICO lap, absolute lap 23: T1 and
+probably T13. Lap 23 is excluded from whole-lap scoring. At zone level,
+T01–T02/lap23 is excluded because the error is confirmed and no LICO was
+detected; T14/lap23 is prudently excluded because the probable T13 error may
+contaminate its approach. The other four zone observations from lap23 remain
+usable, as do all six from clean LICO lap25.
+
+Native-DuckDB scoring of the one clean whole LICO lap measures `0.1823 L` saved
+and `0.6800 s` lost against bracketing push laps, versus frozen predictions of
+`0.12855 L` and `0.37222 s`. Ten of twelve zone observations remain included.
+This is an authoritative but very small prospective sample: preserve it as a
+held-out validation result and do not refit from it. The driver confirmed
+hearing all 12 cues, so the operational audio/cue gate is closed.
+
+The all-history, no-double-counting verdict is: T03 and T11 robust for the
+tested profile; T01–T02 and T08–T09 promising; T12 unstable because its measured
+time cost is much higher than predicted; and T14 insufficient because only one
+authoritative held-out observation remains. See
+[the 2026-09-10 decision record](decision_record_2026-09-10_cross_circuit.md).
 
 ## Label Meaning
 

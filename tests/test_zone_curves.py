@@ -131,6 +131,19 @@ def test_excludes_detected_lico_from_baseline_points_by_default():
     assert points["lap_number"].to_list() == [1, 3]
 
 
+def test_nullable_collection_design_does_not_drop_nonbaseline_points():
+    zone_passes = pl.DataFrame(
+        [
+            _zone_pass(1, "spa_t18", "T18", "none", 0.40, 5.00, False, None),
+            _zone_pass(2, "spa_t18", "T18", "live", 0.35, 5.25, True, 72.0),
+        ]
+    ).with_columns(pl.lit(None, dtype=pl.String).alias("collection_design"))
+
+    points = build_zone_curve_points(zone_passes)
+
+    assert points["lap_number"].to_list() == [1, 2]
+
+
 def _zone_pass(
     lap_number: int,
     zone_id: str,

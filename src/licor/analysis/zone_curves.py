@@ -174,7 +174,9 @@ def _exclude_contaminated_baseline_passes(
 ) -> pl.DataFrame:
     baseline_condition = pl.col("lico_intensity") == baseline_intensity
     if "collection_design" in zone_passes.columns:
-        baseline_condition = baseline_condition | (pl.col("collection_design") == "baseline")
+        baseline_condition = baseline_condition | (
+            pl.col("collection_design") == "baseline"
+        ).fill_null(False)
     return zone_passes.filter(
         ~(
             baseline_condition

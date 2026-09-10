@@ -1,4 +1,4 @@
-"""Build the prospective Paul static pilot from freshly audited intake outputs."""
+"""Build distinct Paul strategy and prospective prediction-validation plans."""
 
 from __future__ import annotations
 
@@ -31,8 +31,17 @@ from licor.reports.zone_plan_report import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_DIR = PROJECT_ROOT / "data/processed/experimental/paul_ricard_pilot_2026_09"
+OUTPUT_DIR = (
+    PROJECT_ROOT
+    / "data/processed/experimental/paul_ricard_prediction_validation_2026_09"
+)
 ZONE_FILE = "config/track_zones/paul_ricard_lmp2_zones.draft.json"
+STRATEGY_TARGET_FUEL_SAVED_PER_LAP_L = 0.05
+VALIDATION_PLAN_ID = "paul_ricard_prediction_validation_static_2026_09"
+VALIDATION_SELECTION_POLICY = (
+    "densest_positive_fuel_bin_per_candidate_zone_within_driver_cap"
+)
+MIN_VALIDATION_BIN_PASS_COUNT = 3
 
 
 def file_record(path: Path, root: Path) -> dict[str, str]:
@@ -90,6 +99,108 @@ def require_reviewed_lap_quality(passes: pl.DataFrame, quality: pl.DataFrame) ->
             )
 
 
+def build_prediction_validation_plan(
+    models: pl.DataFrame,
+    bins: pl.DataFrame,
+    priors: pl.DataFrame,
+) -> pl.DataFrame:
+    """Select one densely observed, nonzero point for every usable candidate zone."""
+    prior_map = {str(row["zone_id"]): row for row in priors.iter_rows(named=True)}
+    rows: list[dict[str, object]] = []
+    expected_zone_ids = {
+        str(row["zone_id"])
+        for row in priors.iter_rows(named=True)
+        if row.get("strategy_role") != "excluded"
+        and int(row.get("feasibility_score") or 0) > 0
+    }
+    model_ready_ids = set(
+        models.filter(pl.col("model_status") == "model_ready")["zone_id"].unique()
+    )
+    missing_model_ids = expected_zone_ids - model_ready_ids
+    if missing_model_ids:
+        raise ValueError(
+            "Prediction-validation zones are not model_ready: "
+            + ", ".join(sorted(missing_model_ids))
+        )
+    for zone_id in sorted(expected_zone_ids):
+        prior = prior_map.get(str(zone_id))
+        if (
+            prior is None
+            or prior.get("strategy_role") == "excluded"
+            or int(prior.get("feasibility_score") or 0) == 0
+        ):
+            continue
+        candidates = bins.filter(
+            (pl.col("zone_id") == zone_id)
+            & (pl.col("detected_lico_passes") > 0)
+            & (pl.col("detected_lico_passes") == pl.col("pass_count"))
+            & (pl.col("mean_lico_distance_before_brake_m") > 0.0)
+            & (pl.col("mean_fuel_saved_l") > 0.0)
+            & (pl.col("pass_count") >= MIN_VALIDATION_BIN_PASS_COUNT)
+        )
+        max_distance_m = prior.get("max_lico_distance_m")
+        if max_distance_m is not None:
+            candidates = candidates.filter(
+                pl.col("mean_lico_distance_before_brake_m") <= float(max_distance_m)
+            )
+        if candidates.is_empty():
+            raise ValueError(
+                f"No dense supported prediction-validation point for {zone_id}"
+            )
+        support = candidates.sort(
+            ["pass_count", "mean_lico_distance_before_brake_m"],
+            descending=[True, False],
+        ).row(0, named=True)
+        selected_distance_m = float(support["mean_lico_distance_before_brake_m"])
+        model = (
+            models.filter((pl.col("zone_id") == zone_id) & (~pl.col("is_extrapolated")))
+            .with_columns(
+                (pl.col("lico_distance_m") - selected_distance_m)
+                .abs()
+                .alias("distance_error_m")
+            )
+            .sort("distance_error_m")
+            .row(0, named=True)
+        )
+        if float(model["distance_error_m"]) > 1e-6:
+            raise ValueError(f"Validation point is missing from model grid: {zone_id}")
+        rows.append(
+            {
+                "zone_id": str(zone_id),
+                "display_label": str(model["display_label"]),
+                "selected_lico_distance_m": selected_distance_m,
+                "is_selected_for_lico": True,
+                "predicted_fuel_saved_l": float(model["predicted_fuel_saved_l"]),
+                "predicted_time_lost_s": float(model["predicted_time_lost_s"]),
+                "optimization_time_lost_s": float(model["predicted_time_lost_s"]),
+                "model_status": str(model["model_status"]),
+                "quality_flags": model.get("quality_flags") or [],
+                "feasibility_score": int(prior["feasibility_score"]),
+                "strategy_role": str(prior["strategy_role"]),
+                "max_lico_distance_m": max_distance_m,
+                "strategy_prior_notes": str(prior.get("notes") or ""),
+                "target_fuel_saved_per_lap_l": None,
+                "fuel_surplus_l": None,
+                "plan_status": "coverage_ready",
+                "plan_purpose": "prediction_validation",
+                "selection_policy": VALIDATION_SELECTION_POLICY,
+                "selection_support_pass_count": int(support["pass_count"]),
+                "selection_support_detected_lico_passes": int(
+                    support["detected_lico_passes"]
+                ),
+            }
+        )
+    if not rows:
+        raise ValueError("Prediction-validation plan produced no candidate zones")
+    total_fuel = sum(float(row["predicted_fuel_saved_l"]) for row in rows)
+    total_time = sum(float(row["predicted_time_lost_s"]) for row in rows)
+    return pl.DataFrame(rows).with_columns(
+        pl.lit(total_fuel).alias("total_predicted_fuel_saved_l"),
+        pl.lit(total_time).alias("total_predicted_time_lost_s"),
+        pl.lit(total_time).alias("total_optimization_time_lost_s"),
+    )
+
+
 def build_plan(
     output_dir: Path = OUTPUT_DIR, project_root: Path = PROJECT_ROOT
 ) -> dict:
@@ -109,22 +220,27 @@ def build_plan(
     laps = pl.read_csv(output_dir / "lap_summary.csv", null_values=[""])
     curve_config = ZoneCurveConfig()
     model_config = ZoneModelConfig()
-    optimizer_config = ZoneOptimizerConfig(target_fuel_saved_per_lap_l=0.05)
+    optimizer_config = ZoneOptimizerConfig(
+        target_fuel_saved_per_lap_l=STRATEGY_TARGET_FUEL_SAVED_PER_LAP_L
+    )
     points = build_zone_curve_points(passes, config=curve_config)
     bins = summarize_zone_curve_bins(points, config=curve_config)
     models = build_zone_piecewise_models(bins, config=model_config)
     priors = build_strategy_prior_table_from_track_zones(
         zone_table,
-        dataset_id="paul_ricard_pilot_2026_09",
+        dataset_id="paul_ricard_lmp2_2026-09-07",
         notes="Geometry heuristic rebuilt from current zones; no learned Spa transfer.",
     )
-    plan = optimize_zone_lico_plan(
+    strategy_plan = optimize_zone_lico_plan(
         models, config=optimizer_config, zone_priors=priors.to_frame()
     )
-    if plan.is_empty() or plan["plan_status"].unique().to_list() != ["target_met"]:
+    if strategy_plan.is_empty() or strategy_plan["plan_status"].unique().to_list() != [
+        "target_met"
+    ]:
         raise ValueError(
             "Pilot target is not reachable under the existing conservative gates"
         )
+    plan = build_prediction_validation_plan(models, bins, priors.to_frame())
     selected = plan.filter(pl.col("is_selected_for_lico"))
     support_rows = []
     for row in selected.iter_rows(named=True):
@@ -140,6 +256,10 @@ def build_plan(
         nearby = local.filter(
             (pl.col("lico_distance_before_brake_m") - distance).abs() <= 25
         )
+        support_bin = bins.filter(
+            (pl.col("zone_id") == row["zone_id"])
+            & ((pl.col("mean_lico_distance_before_brake_m") - distance).abs() <= 1e-6)
+        ).row(0, named=True)
         support_rows.append(
             {
                 "zone_id": row["zone_id"],
@@ -148,8 +268,14 @@ def build_plan(
                 "nearby_radius_m": 25.0,
                 "nearby_pass_count": nearby.height,
                 "nearby_run_count": nearby["run_id"].n_unique(),
+                "source_bin_pass_count": int(support_bin["pass_count"]),
+                "source_bin_detected_lico_passes": int(
+                    support_bin["detected_lico_passes"]
+                ),
                 "quality_flags": row["quality_flags"],
-                "evaluation_status": "exploratory_fit_pending_prospective_pilot",
+                "evaluation_status": (
+                    "dense_local_support_pending_prospective_validation"
+                ),
             }
         )
     artifacts = {
@@ -157,13 +283,14 @@ def build_plan(
         "zone_curve_bins.csv": bins,
         "zone_models.csv": models,
         "strategy_priors.csv": priors.to_frame(),
+        "strategy_target_plan.csv": strategy_plan,
         "zone_plan.csv": plan,
         "selected_support.csv": pl.DataFrame(support_rows),
         "lap_sanity.csv": summarize_full_lap_sanity(laps, points),
         "marginal_efficiency.csv": build_zone_marginal_efficiency(
             models, zone_plan=plan
         ),
-        "plan_sensitivity.csv": summarize_zone_plan_sensitivity(
+        "strategy_target_plan_sensitivity.csv": summarize_zone_plan_sensitivity(
             models, base_config=optimizer_config, zone_priors=priors.to_frame()
         ),
     }
@@ -176,7 +303,10 @@ def build_plan(
         create_zone_plan_report_figure(
             models,
             plan,
-            title="Paul Ricard prospective static pilot — exploratory predictions",
+            title=(
+                "Paul Ricard six-zone prediction-validation profile — "
+                "exploratory predictions"
+            ),
         ),
         output_dir / "zone_plan_report.html",
     )
@@ -191,9 +321,18 @@ def build_plan(
     inputs.append(project_root / ZONE_FILE)
     sources = sorted((project_root / "src/licor").rglob("*.py")) + [Path(__file__)]
     manifest = {
-        "schema_version": 1,
-        "purpose": "prospective_static_pilot_not_validated_race_strategy",
-        "target_fuel_saved_per_lap_l": 0.05,
+        "schema_version": 2,
+        "purpose": "prospective_static_prediction_validation",
+        "plan_id": VALIDATION_PLAN_ID,
+        "plan_purpose": "prediction_validation",
+        "selection_policy": VALIDATION_SELECTION_POLICY,
+        "target_source": "not_applicable_coverage_plan",
+        "strategy_reference_target_fuel_saved_per_lap_l": (
+            STRATEGY_TARGET_FUEL_SAVED_PER_LAP_L
+        ),
+        "strategy_reference_selected_zones": strategy_plan.filter(
+            pl.col("is_selected_for_lico")
+        )["zone_id"].to_list(),
         "predicted_fuel_saved_l": float(plan["total_predicted_fuel_saved_l"][0]),
         "predicted_time_lost_s": float(plan["total_predicted_time_lost_s"][0]),
         "selected_zones": selected["zone_id"].to_list(),
@@ -206,11 +345,12 @@ def build_plan(
         "quality_review": {
             "date": "2026-09-07",
             "accepted_flags_basis": "Detected LICO, fuel/time deltas and brake drift are expected under varied-LICO collection. Zero-throttle boundary flags are retained; T08 extreme tail is not a selected distance. Excluded/context laps stay outside modeling; T03 lap13 exclusion stays visible.",
-            "remaining_flags": "T11/T12 contaminated push passes are excluded from local baseline by existing curve config; selected T03/T08 have 9/10 uncontaminated push references. T08 time response remains noisy.",
+            "remaining_flags": "T11/T12 contaminated push passes are excluded from local baseline by existing curve config. T01 has nonpositive local time deltas in its dense bins; T08/T11/T12/T14 time shapes remain noisy. These are reasons to validate prospectively, not to hide the zones from a coverage run.",
         },
         "caveats": [
             "model_ready describes in-sample shape gates, not held-out accuracy",
-            "0.05 L/lap is a pilot target; no Spa pit assumptions used",
+            "the six-zone sum is a validation profile, not a race recommendation",
+            "0.05 L/lap remains a separate strategy reference; no Spa pit assumptions used",
             "sample-based zone boundaries and pooled baseline remain exploratory",
         ],
         "git_commit": subprocess.check_output(
