@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "contract_id": "licor_lmp2_feature_contract_v1",
+  "grain": ["dataset_id", "circuit_id", "run_id", "lap_number", "zone_id"],
+  "principles": [
+    "The raw observation table contains no baseline fitted across all rows.",
+    "Identifiers, quality fields, manual window bounds and post-action consequences are never pre-action decision features.",
+    "The physical action ratio is lift lead versus a fold-fitted push brake onset divided by fold-fitted push deceleration distance.",
+    "Planned action and executed action remain separate. Historical executed action may fit a response surface; live inference supplies a planned action.",
+    "Any dynamic context feature must satisfy feature timestamp <= decision cutoff before it can enter a decision model.",
+    "Acceleration at a proposed lift is derived from fold-local clean-push traces at the same physical lead ratio, never from the held-out LICO passage."
+  ],
+  "column_groups": [
+    {
+      "role": "identifier",
+      "availability": "audit_only",
+      "model_tasks": [],
+      "default_definition": "Lineage or grouping identifier; forbidden as a model input.",
+      "columns": [
+        "observation_id", "dataset_id", "circuit_id", "run_id", "lap_number", "zone_id",
+        "source_raw_sha256", "zone_definition_version", "extractor_version"
+      ]
+    },
+    {
+      "role": "static_context",
+      "availability": "pre_session",
+      "model_tasks": ["context_ablation_only"],
+      "default_definition": "Context known before the session; use only when the evaluation regime can identify its effect.",
+      "columns": [
+        "track_name", "car_class", "car_model", "session_type", "run_type",
+        "collection_protocol_id", "collection_session_id", "driver_id", "setup_id"
+      ]
+    },
+    {
+      "role": "zone_capture_metadata",
+      "availability": "audit_only",
+      "model_tasks": [],
+      "default_definition": "Manual capture or display metadata; never used to normalize the physical action.",
+      "columns": [
+        "display_label", "turn_numbers", "zone_start_m", "lico_window_start_m",
+        "brake_reference_m", "zone_end_m", "track_length_m"
+      ]
+    },
+    {
+      "role": "collection_context",
+      "availability": "audit_only",
+      "model_tasks": [],
+      "default_definition": "Collection design metadata used for filtering and audit, not prediction.",
+      "columns": ["lico_intensity", "collection_design"]
+    },
+    {
+      "role": "pre_action_candidate",
+      "availability": "requires_cutoff_verification",
+      "model_tasks": ["ml_context_ablation"],
+      "default_definition": "Dynamic value sampled near zone entry; unavailable to decision models until its timestamp is proven no later than the decision cutoff.",
+      "columns": [
+        "stint_index", "zone_start_speed_kph", "carcass_temp_zone_start_c",
+        "rubber_temp_zone_start_c", "centre_temp_zone_start_c", "rim_temp_zone_start_c"
+      ]
+    },
+    {
+      "role": "cutoff_guard",
+      "availability": "audit_only",
+      "model_tasks": [],
+      "default_definition": "Timestamp or verification flag enforcing feature time <= decision time.",
+      "columns": [
+        "pre_action_snapshot_ts", "decision_cutoff_ts", "pre_action_cutoff_verified"
+      ]
+    },
+    {
+      "role": "planned_action",
+      "availability": "known_before_action",
+      "model_tasks": ["fuel_response", "time_response", "live_recommendation"],
+      "default_definition": "Requested lift start for live inference; null for historical runs without a surviving lap-zone plan.",
+      "columns": ["planned_lift_start_m"]
+    },
+    {
+      "role": "observed_action",
+      "availability": "known_after_execution",
+      "model_tasks": ["offline_response_training", "execution_model"],
+      "default_definition": "Treatment actually executed; never substituted silently for a live planned action.",
+      "columns": [
+        "has_lico", "lico_start_m", "lico_end_m", "lico_distance_m", "lico_duration_s",
+        "throttle_release_rate_pct_per_s", "minimum_throttle_pct_before_brake",
+        "average_throttle_pct_before_brake"
+      ]
+    },
+    {
+      "role": "legacy_diagnostic",
+      "availability": "post_action_audit_only",
+      "model_tasks": [],
+      "default_definition": "Legacy threshold/window-derived diagnostic retained for backward comparison; forbidden in the decision feature view.",
+      "columns": [
+        "legacy_lift_lead_vs_manual_brake_reference_m", "legacy_first_brake_sample_m",
+        "legacy_first_brake_sample_speed_kph", "legacy_window_min_speed_point_m",
+        "legacy_window_min_speed_point_kph", "legacy_time_first_brake_to_window_min_speed_s",
+        "legacy_time_window_min_speed_to_zone_end_s"
+      ]
+    },
+    {
+      "role": "post_action_outcome",
+      "availability": "known_after_zone",
+      "model_tasks": ["target", "auxiliary_target", "diagnostic"],
+      "default_definition": "Observed same-pass consequence; never a same-pass pre-action predictor.",
+      "columns": [
+        "fuel_used_l", "elapsed_time_s", "exit_speed_kph", "time_start_to_brake_s",
+        "brake_peak_pct", "brake_duration_s", "brake_area_pct_s",
+        "time_above_80pct_brake_s", "brake_release_rate_pct_per_s"
+      ]
+    },
+    {
+      "role": "physical_braking_event",
+      "availability": "known_after_zone_or_push_reference",
+      "model_tasks": ["push_reference", "auxiliary_target", "diagnostic"],
+      "default_definition": "Metric from the main sustained braking event and first relevant minimum-speed point.",
+      "columns": [
+        "main_brake_onset_m", "main_brake_onset_ts", "main_brake_onset_speed_kph",
+        "main_brake_event_duration_s", "main_brake_event_area_pct_s", "min_speed_point_m",
+        "min_speed_point_ts", "min_speed_point_kph", "push_deceleration_distance_observed_m",
+        "approach_acceleration_ratio_0_0_mps2", "approach_acceleration_ratio_0_25_mps2",
+        "approach_acceleration_ratio_0_5_mps2", "approach_acceleration_ratio_1_0_mps2",
+        "approach_acceleration_ratio_1_5_mps2", "observed_pre_lift_acceleration_mps2",
+        "acceleration_sensor_speed_correlation", "acceleration_measurement_source"
+      ]
+    },
+    {
+      "role": "quality",
+      "availability": "audit_only",
+      "model_tasks": [],
+      "default_definition": "Filter, review or readiness information; forbidden as a predictor.",
+      "columns": [
+        "validity_label", "braking_event_quality", "driver_review_exclusion_reason",
+        "driver_review_exclusion_notes", "driver_review_signal_tags", "driver_review_pass_tags",
+        "labels_quality", "execution_quality", "model_eligible", "is_push_reference_candidate"
+      ]
+    }
+  ],
+  "derived_inside_each_fold": [
+    {
+      "column": "planned_lift_lead_vs_push_brake_m",
+      "role": "planned_action",
+      "definition": "Forward along-track distance from planned lift start to the median push brake onset."
+    },
+    {
+      "column": "executed_lift_lead_vs_push_brake_m",
+      "role": "observed_action",
+      "definition": "Forward along-track distance from executed lift start to the median push brake onset."
+    },
+    {
+      "column": "planned_lift_lead_to_push_deceleration_ratio",
+      "role": "planned_action",
+      "definition": "Planned lift lead divided by median push braking onset-to-minimum-speed distance."
+    },
+    {
+      "column": "executed_lift_lead_to_push_deceleration_ratio",
+      "role": "observed_action",
+      "definition": "Executed lift lead divided by median push braking onset-to-minimum-speed distance."
+    },
+    {
+      "column": "push_acceleration_at_planned_lift_mps2",
+      "role": "pre_action_context",
+      "definition": "Acceleration at the proposed lift point, interpolated from fold-local clean-push profiles at physical lead ratios 0.5, 1.0 and 1.5."
+    },
+    {
+      "column": "push_acceleration_at_executed_lift_mps2",
+      "role": "retrospective_training_context",
+      "definition": "Fold-local clean-push acceleration interpolated at the executed action ratio; it does not use acceleration observed after the LICO action."
+    },
+    {
+      "column": "planned_acceleration_weighted_action",
+      "role": "planned_action",
+      "definition": "Planned lift ratio multiplied by non-negative fold-local push acceleration at that point."
+    },
+    {
+      "column": "executed_acceleration_weighted_action",
+      "role": "observed_action",
+      "definition": "Executed lift ratio multiplied by non-negative fold-local push acceleration at that point."
+    },
+    {
+      "column": "planned_acceleration_lookup_status",
+      "role": "quality",
+      "definition": "Whether the planned action ratio is inside the push acceleration grid or clipped below/above it."
+    },
+    {
+      "column": "executed_acceleration_lookup_status",
+      "role": "quality",
+      "definition": "Whether the executed action ratio is inside the push acceleration grid or clipped below/above it."
+    },
+    {
+      "column": "target_fuel_saved_vs_fold_push_l",
+      "role": "target",
+      "definition": "Fold-fitted median push fuel use minus observed zone fuel use."
+    },
+    {
+      "column": "target_time_lost_vs_fold_push_s",
+      "role": "target",
+      "definition": "Observed zone time minus fold-fitted median push zone time."
+    }
+  ]
+}

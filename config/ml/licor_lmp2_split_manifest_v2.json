@@ -1,0 +1,96 @@
+{
+  "schema_version": 2,
+  "split_id": "licor_lmp2_spa_paul_bahrain_v2",
+  "minimum_push_support_per_zone": 3,
+  "maximum_push_deceleration_cv": 0.15,
+  "locked_external_holdout_run_ids": [
+    "paul_pilot_20260909_232207"
+  ],
+  "globally_excluded_run_ids": [
+    "recommendation_execution_selected_01",
+    "recommendation_execution_selected_latency_v2_02",
+    "recommendation_execution_selected_latency_v2_guarded_preview_01"
+  ],
+  "baseline_policy": "Whole runs retain one role. Destination dedicated push runs calibrate references; no test-run push lap enters a reference. Scheduled pushes and silent zones never fit or score an intentional LICO response. Phase-reviewed clean metrics remain usable with separate support gates.",
+  "evaluation_status": "retrospective_response_transfer_after_locked_bahrain_prospective_score",
+  "folds": [
+    {
+      "fold_id": "spa_paul_to_bahrain_zero_lico_shot",
+      "evaluation_regime": "cross_circuit_zero_lico_shot_calibrated",
+      "train_run_ids": [
+        "spa_lmp2_none_2026-05-14T02_19_09Z",
+        "spa_lmp2_low_2026-05-14T02_49_32Z",
+        "spa_lmp2_medium_2026-05-14T03_18_32Z",
+        "spa_lmp2_high_2026-05-14T03_36_44Z",
+        "spa_lmp2_2026-05-21T22_10_36Z_baseline_push_01",
+        "spa_lmp2_2026-05-21T22_31_31Z_baseline_push_02",
+        "spa_lmp2_2026-05-21T22_57_26Z_controlled_random_01",
+        "spa_lmp2_2026-05-22T00_16_10Z_controlled_random_02",
+        "spa_lmp2_2026-05-22T00_41_25Z_controlled_random_03",
+        "spa_lmp2_2026-05-22T01_05_54Z_controlled_random_04",
+        "paul_ricard_baseline_push_01",
+        "paul_ricard_baseline_push_02",
+        "paul_ricard_controlled_random_01",
+        "paul_ricard_controlled_random_02"
+      ],
+      "calibration_run_ids": [
+        "bahrain_push_20260911_212732"
+      ],
+      "test_run_ids": [
+        "bahrain_lico_20260911_224825"
+      ]
+    },
+    {
+      "fold_id": "spa_bahrain_to_paul_zero_lico_shot",
+      "evaluation_regime": "cross_circuit_zero_lico_shot_calibrated",
+      "train_run_ids": [
+        "spa_lmp2_none_2026-05-14T02_19_09Z",
+        "spa_lmp2_low_2026-05-14T02_49_32Z",
+        "spa_lmp2_medium_2026-05-14T03_18_32Z",
+        "spa_lmp2_high_2026-05-14T03_36_44Z",
+        "spa_lmp2_2026-05-21T22_10_36Z_baseline_push_01",
+        "spa_lmp2_2026-05-21T22_31_31Z_baseline_push_02",
+        "spa_lmp2_2026-05-21T22_57_26Z_controlled_random_01",
+        "spa_lmp2_2026-05-22T00_16_10Z_controlled_random_02",
+        "spa_lmp2_2026-05-22T00_41_25Z_controlled_random_03",
+        "spa_lmp2_2026-05-22T01_05_54Z_controlled_random_04",
+        "bahrain_push_20260911_212732",
+        "bahrain_lico_20260911_224825"
+      ],
+      "calibration_run_ids": [
+        "paul_ricard_baseline_push_01",
+        "paul_ricard_baseline_push_02"
+      ],
+      "test_run_ids": [
+        "paul_ricard_controlled_random_01",
+        "paul_ricard_controlled_random_02"
+      ]
+    },
+    {
+      "fold_id": "paul_bahrain_to_spa_zero_lico_shot",
+      "evaluation_regime": "cross_circuit_zero_lico_shot_calibrated",
+      "train_run_ids": [
+        "paul_ricard_baseline_push_01",
+        "paul_ricard_baseline_push_02",
+        "paul_ricard_controlled_random_01",
+        "paul_ricard_controlled_random_02",
+        "bahrain_push_20260911_212732",
+        "bahrain_lico_20260911_224825"
+      ],
+      "calibration_run_ids": [
+        "spa_lmp2_none_2026-05-14T02_19_09Z",
+        "spa_lmp2_2026-05-21T22_10_36Z_baseline_push_01",
+        "spa_lmp2_2026-05-21T22_31_31Z_baseline_push_02"
+      ],
+      "test_run_ids": [
+        "spa_lmp2_low_2026-05-14T02_49_32Z",
+        "spa_lmp2_medium_2026-05-14T03_18_32Z",
+        "spa_lmp2_high_2026-05-14T03_36_44Z",
+        "spa_lmp2_2026-05-21T22_57_26Z_controlled_random_01",
+        "spa_lmp2_2026-05-22T00_16_10Z_controlled_random_02",
+        "spa_lmp2_2026-05-22T00_41_25Z_controlled_random_03",
+        "spa_lmp2_2026-05-22T01_05_54Z_controlled_random_04"
+      ]
+    }
+  ]
+}

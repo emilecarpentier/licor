@@ -89,11 +89,93 @@ baseline, imputation, scaling and feature selection. Circuit-prefixed
 apex or exit deltas are diagnostic outcomes unless a separate pre-action model
 predicts them.
 
-Useful first features are normalized lift distance, LICO-window length,
-push-reference approach/brake speed, braking-severity and straight-length
-proxies, zone complexity and local push fuel/time references. Predict fuel
-saved and time lost separately, with uncertainty and unsupported-context
-flags.
+The primary normalized action is now the planned lift lead to the fold-fitted
+push brake onset divided by the fold-fitted push brake-onset-to-minimum-speed
+distance. Keep planned and executed leads, coast length and absolute distances
+separate. LICO-window length is capture/QC metadata only; it is not an action
+normalizer. Useful context candidates include fold-local push approach/brake
+speed, braking severity, straight/complexity proxies and push fuel/time
+references. Predict fuel saved and time lost separately, with uncertainty and
+unsupported-context flags.
+
+Acceleration at the proposed lift is now a required context rather than an
+optional future feature. The relevant counterfactual is the acceleration the
+car would still have under full push at the proposed lift point. Clean push
+traces therefore provide an approach-acceleration profile at physical lead
+ratios `0`, `0.25`, `0.5`, `1.0` and `1.5`; the fold view interpolates that profile at the
+planned/executed action ratio and exposes an `action × acceleration`
+interaction. Same-pass acceleration after a LICO begins is never used to
+predict that LICO outcome.
+
+The current LMU files also expose an axis-label trap: `G Force Lat`, with sign
+reversed, matches longitudinal speed acceleration in all 16 checked DuckDBs;
+`G Force Long` does not. The builder validates the mapped sensor against a
+speed-derived slope and falls back to the latter if correlation is below
+`0.80`.
+
+Implementation status on 2026-09-10: the pooled Spa-Paul observation table,
+feature-availability registry, eight explicit grouped folds, fold-local push
+references and derived fold views are reproducible from native telemetry with
+`scripts/build_cross_circuit_ml_table.py`. The raw table contains no globally
+fitted baseline deltas, and `paul_pilot_20260909_232207` is locked outside the
+builder. This completes the table/split construction gate, not the model
+comparison gate.
+
+The first deliberately weak benchmark is also recorded. A zero-intercept,
+non-negative action-only response model uses the executed physical action ratio
+for retrospective testing; it is not yet a frozen planned-action predictor.
+After rejecting truncated events and push denominators with a coefficient of
+variation above `0.15`, Spa→Paul reduces fuel MAE from `0.02704 L` to
+`0.00637 L` and time MAE from `0.13125 s` to `0.11231 s`. Paul→Spa reduces
+fuel MAE from `0.03969 L` to `0.00752 L` and time MAE from `0.10142 s` to
+`0.06969 s`.
+These are row-level diagnostic errors with run-macro counterparts in the
+artifact. One Paul leave-run-out fold is worse than the zero predictor for time,
+so the result supports the transfer hypothesis much more clearly for fuel than
+for time. It does not yet compare the local curve or archetype heuristic and
+does not justify model promotion. Forty-two fold-zone references remain ready;
+the physical ratio currently covers five Spa zones and three Paul zones.
+Improving or explicitly declining the denominator for complex/truncated zones
+is therefore part of the remaining model-comparison work. The first
+acceleration-conditioned monotone benchmark is now emitted beside the
+action-only benchmark; comparisons must use the paired acceleration-available
+subset because coverage differs.
+
+On that paired subset, the new term is not yet a performance improvement.
+Spa→Paul is unchanged for fuel (`0.00641 L` MAE) and time (`0.11255 s`), with
+both interaction slopes fitted to zero. Paul→Spa is slightly worse than the
+paired action-only fit for fuel (`0.00777` versus `0.00751 L`) and time
+(`0.07510` versus `0.07280 s`), although its time interaction is positive.
+This does not invalidate the physical variable; it shows that two circuits and
+a two-term linear response do not identify its transferable effect reliably.
+Keep it in the contract and test it prospectively on circuits C and D without
+claiming an accuracy gain now.
+
+## Circuit selection gate
+
+Circuit diversity is not sufficient if driver inconsistency overwhelms the
+zone signal. Before freezing circuits C and D, score every candidate from 1 to
+5 on:
+
+1. clean-lap repeatability for the current driver (double weight);
+2. repeatability of brake/lift points in candidate zones (double weight);
+3. diversity of realistic LICO approaches relative to Spa and Paul Ricard;
+4. number of usable heavy, medium and plateau-speed braking approaches;
+5. scored laps obtainable per hour.
+
+A circuit with driver repeatability below 3 is rejected regardless of physical
+diversity. The intended pair is one high-diversity circuit and one
+high-repeatability circuit; they must not both be selected merely because their
+layouts are interesting. Bahrain is selected as circuit C: the driver reports
+high repeatability, and its long straights followed by heavy braking into slow
+corners provide clear LICO treatments. Imola, COTA, Sebring and Interlagos
+remain candidates for circuit D. Paul Ricard is explicitly a weak-repeatability
+reference, not a template for that selection.
+
+The circuit-C push protocol is frozen as
+`bahrain_lmp2_circuit_c_v1`. Its first session collects five clean push laps
+before any Bahrain LICO response is available; a push-only launcher preserves
+the native telemetry link and driver notes without starting the live cue path.
 
 ## Minimal new-circuit protocol
 
@@ -140,9 +222,12 @@ new outcomes are inspected.
 
 ## Next executable sequence
 
-1. Build and validate the pooled ML table and leakage-safe split manifest.
-2. Run leave-one-run-out checks within each circuit and the two cross-circuit
-   stress tests; label all results diagnostic.
+1. [Complete] Build and validate the pooled ML table and leakage-safe split
+   manifest.
+2. [Partial] Run leave-one-run-out checks within each circuit and the two
+   cross-circuit stress tests; action-only and acceleration-conditioned
+   baselines are complete, while the local-curve and archetype comparisons
+   remain.
 3. Freeze the circuit-C predictions and collection pack.
 4. Collect circuit C, evaluate it, then repeat unchanged on circuit D.
 5. Run the first meaningful leave-one-circuit-out benchmark and decide whether

@@ -548,3 +548,162 @@ keeps quality flags and recommended uses separate from zone model conclusions:
 a lap can be useful for reports, lap summaries, zone readiness, curve-update
 candidates, baseline references, or plan-execution review depending on its
 metadata, sample continuity, lap-summary status, and zone-pass health.
+
+## Cross-circuit ML pack — 2026-09-10
+
+The first pooled LMP2 table is rebuilt from the 13 available Spa runs and four
+historical Paul Ricard runs at one row per `run / lap / zone`. It contains 663
+raw observations across 14 circuit-zone definitions. The pack lives under
+`data/processed/experimental/cross_circuit_ml_v1/` and includes raw CSV/Parquet
+observations, a feature-role registry, eight split assignments, fold-local push
+references, fold feature views and a hashed build manifest.
+
+The builder deduplicates native telemetry by SHA-256 and refuses to ingest the
+locked confirmation run `paul_pilot_20260909_232207`. Baseline means, action
+ratios and fuel/time deltas are fitted after the split from the authorized push
+rows. Existing Spa `baseline_mean_*` columns are not carried into the pooled
+raw table. This pack is model-ready infrastructure, not evidence that the
+Spa↔Paul transfer already generalizes.
+
+`diagnostic_action_only_predictions.csv` and
+`diagnostic_action_only_metrics.csv` contain the first retrospective stress
+tests. They now contain the full action-only benchmark, an action-only fit on
+the acceleration-available paired subset, and a two-term monotone model using
+`action` plus `action × push acceleration at the lift`. The acceleration
+profile is reconstructed at physical lead ratios `0`, `0.25`, `0.5`, `1.0`
+and `1.5` from
+fold-authorized push laps. Sixty fold-zone profiles meet the acceleration
+support gate; 42 also meet the stricter physical braking-denominator gate.
+
+On equal rows, acceleration does not yet improve the two-circuit transfer
+stress test. Spa→Paul is unchanged for fuel (`0.00641 L` MAE) and time
+(`0.11255 s`); both fitted interaction slopes are zero. Paul→Spa is slightly
+worse than paired action-only for fuel (`0.00777` vs `0.00751 L`) and time
+(`0.07510` vs `0.07280 s`), although the fitted time interaction is positive.
+This is evidence that the variable is physically relevant but not identified
+well enough by only two circuit tasks and the current linear form. The files
+remain diagnostic and must not be mistaken for frozen predictions on a new
+circuit.
+
+## Bahrain circuit-C push collection — prepared 2026-09-10
+
+Bahrain is selected prospectively as circuit C because the driver reports high
+repeatability and the standard Grand Prix layout contains clear
+long-straight/heavy-braking LICO opportunities. The first session is registered
+as `baseline_push_01` under protocol `bahrain_lmp2_circuit_c_v1`. It requires
+five clean full-push laps with 55 L at garage departure, zero tire wear,
+constant weather, one unchanged setup and native LMU DuckDB recording. Up to
+two replacement laps may be recorded, but all laps and driver notes must be
+retained.
+
+The frozen push-only pack contains no LICO plan, cue or audio path. It creates
+the operator session, preserves lap notes and links the newest native DuckDB.
+No Bahrain LICO prediction may be frozen until this run passes intake and its
+physical braking/acceleration zones are reviewed.
+
+### Bahrain Push Baseline 01 — recorded 2026-09-11
+
+- File: `data/Bahrain International Circuit_P_2026-09-12T01_49_14Z.duckdb`
+- SHA-256: `36ed02a48914b285ed449183e67f1942bf4bc275484aea57bcba2efe178994bb`
+- Run id: `bahrain_push_20260911_212732`
+- Collection design: `baseline`
+- Complete intervals: laps `15–20`; lap15 is the outlap and laps16–20 are push.
+- Unclosed context: lap21 contains only about `4.27 s / 301 m` after the line.
+- Clean whole laps: `16, 17`.
+- Borderline but locally usable laps: `18, 19, 20`.
+- Driver review: displayed lap19 maps to stored lap18 and has a wide T15 exit;
+  displayed lap20 maps to stored lap19 and has a rear slide/wide T4 exit;
+  displayed lap21 maps to stored lap20 and has excessive T15 apex speed plus a
+  wide exit.
+- Intake interpretation: preserve all unaffected zones plus pre-action and
+  brake-onset descriptors in the affected zones. Mask T15 exit outcomes on
+  lap18, T4 mid/exit outcomes on lap19, and T15 brake-release/apex/exit outcomes
+  on lap20. Do not use the affected complete-zone time/fuel values as clean push
+  targets.
+- Native channel continuity: no sampling gaps in brake, throttle, distance,
+  speed, fuel, longitudinal-G or tyre-temperature timelines; no post-initial
+  impact transition was recorded. The native `G Force Long` channel is present,
+  but its alignment with speed-derived longitudinal acceleration has not passed
+  the coherence gate and remains diagnostic until resolved.
+- Status: run metadata validates against the frozen protocol. Eight repeatable
+  physical brake clusters have five ready observations each. T05–T07 and T13
+  remain validation-only; six zones enter the first live block. Phase-specific
+  masks leave T04 with four clean outcome references and T14–T15 with three,
+  while preserving five brake-onset/acceleration references.
+
+### Bahrain zero-LICO-shot validation — frozen 2026-09-11
+
+The prospective plan `bahrain_lmp2_zero_lico_shot_static_v1` was frozen before
+any Bahrain LICO outcome. Its action-only monotone response was fitted on 187
+unique historical LICO observations from Spa and Paul Ricard only. Bahrain
+contributes push braking geometry and speed-derived acceleration profiles, not
+response targets. The acceleration interaction remains shadow-only; a
+pre-action acceleration-weighted guard caps every selected action.
+
+The next run is exactly `P/L/L/P/L/L/P`. Six zones use conservative physical
+ratios between about `0.35` and `0.47`; T05–T07 and T13 are silent. The pack at
+`data/processed/experimental/bahrain_lmp2_transfer_2026_09/lico_validation_pack_v1/`
+hashes its raw push input, historical model artifacts, predictions, plan and
+launchers. Synthetic runtime preflight emits 24 cues and logs 48 crossings.
+
+### Bahrain zero-LICO-shot validation — recorded and scored 2026-09-11
+
+**Historical analysis_v1: local timing/fuel metrics below are superseded by the
+native timestamp correction in analysis_v2_final. See the correction entry
+and `docs/bahrain_transfer_review_2026-09-11.md`. The original predictions and
+raw recording remain unchanged.**
+
+- Run id: `bahrain_lico_20260911_224825`.
+- Native file: `data/Bahrain International Circuit_P_2026-09-12T02_48_51Z.duckdb`.
+- SHA-256: `bf4a2f5e679629efb0e78f7476d962102697b38cdaac000179e1f1c7eac23054`.
+- Complete scored block: push laps `23, 26, 29`; LICO laps `24, 25, 27, 28`.
+- Execution: 24 enabled cues, all fired on time, with a maximum absolute cue
+  error of `1.442 m`. The driver reported no notable error and judged the zone
+  selection and lift points appropriate except for an overly strong T10 action.
+- Whole-lap prospective result: median observed saving `0.1731 L/lap` for an
+  official median cost of `0.400 s/lap`, versus the frozen prediction of
+  `0.2186 L/lap` and `0.5820 s/lap`.
+- Recovery-aware T10 result: `0.0315 L` saved for `0.2945 s` lost at the
+  executed median action of `60.9 m`; individual time losses span
+  `0.1921–0.3812 s`. The frozen T10 window ended at `2800 m` and therefore
+  understated the cost that persisted down the following acceleration zone.
+- Decision: retain T01–T03, T04, T08, T11 and T14–T15 for the next model
+  iteration; keep T05–T07 and T13 silent; remove the tested 65 m T10 action
+  from the efficient plan. A later T10 retest, if useful, must be isolated and
+  much lighter rather than folded into the next broad validation block.
+- Audit note: native `LastImpactMagnitude` toggled near `750 m` on push lap29.
+  The driver reported no incident and lap29 was the fastest lap, so it remains
+  included with a review tag. The previous Bahrain push baseline closely
+  matches the same-run push medians, including T10 (`11.28 s` and about
+  `0.224 L` in both), supporting the counterfactual used here.
+- Reproducible outputs: the session's `analysis_v1/` directory, built by
+  `scripts/analyze_bahrain_lico_validation.py`. Silent-zone differences are
+  contextual diagnostics only because no LICO action occurred there; they are
+  not interpreted as causal zone savings or costs.
+
+### Bahrain correction and three-circuit ML v2 — 2026-09-11
+
+The live scoring distance was repeated between approximately 0.20 s updates;
+analysis_v1 wrongly interpolated from the last repeat. The new native
+per-channel timestamp interpolation yields `0.17186 L` saved and `0.41367 s`
+lost over 100–5350 m; official median lap loss remains `0.400 s`. T10's frozen
+cost is `0.13285 s` and its extended diagnostic median is `0.19837 s`
+(`0.12090–0.30543 s`), with `0.03391 L` saved. Local negative T1 differences
+remain observational, not evidence of a causal time benefit.
+
+The corrected score loads and verifies session-frozen zones and predictions.
+`docs/evidence/bahrain_score_manifest_v2.json` and
+`docs/evidence/bahrain_zone_scores_v2.csv` retain small Git-tracked evidence.
+All previous artifacts stay archived; the v1 scoring CLI is disabled to
+prevent accidental reuse of the superseded interpolation.
+
+The v2 ML pack contains 759 observations from three circuits and three grouped
+folds. All outcomes use the corrected native rule. Scheduled push/silent
+coasts do not fit responses; phase-specific masks preserve clean physical
+evidence and independent support thresholds guard each target. Six Spa lap32
+rows have non-monotonic distance and retain null outcomes. The Paul live
+confirmation remains locked outside the table. A separate within-run Bahrain
+adaptation study reserves laps27/28 across 0/1/2 calibration budgets; fuel
+improves rapidly, time modestly, and transfer has not yet beaten local-only
+estimation convincingly. Full decisions and reproduction commands are in
+`docs/bahrain_transfer_review_2026-09-11.md`.

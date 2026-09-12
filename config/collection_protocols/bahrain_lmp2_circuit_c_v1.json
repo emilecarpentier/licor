@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "protocol_id": "bahrain_lmp2_circuit_c_v1",
+  "dataset_id": "bahrain_lmp2_circuit_c_2026-09",
+  "track_name": "Bahrain International Circuit",
+  "car_class": "LMP2_ELMS",
+  "purpose": "Collect the clean full-push calibration required to describe circuit C before any Bahrain LICO outcome is observed or any zero-LICO-shot prediction is frozen.",
+  "required_run_metadata": [
+    "collection_protocol_id",
+    "collection_session_id",
+    "collection_design",
+    "target_zones",
+    "execution_quality",
+    "labels_quality",
+    "driver_notes"
+  ],
+  "sessions": [
+    {
+      "session_id": "baseline_push_01",
+      "collection_design": "baseline",
+      "objective": "Obtain five clean consecutive full-push laps for Bahrain braking, approach-speed, acceleration and local fuel/time references.",
+      "target_zones": [],
+      "minimum_clean_laps": 5,
+      "lico_variation_guidance": "No intentional LICO, lift-and-coast or fuel-saving action. Normal throttle modulation required to drive corners is not LICO.",
+      "execution_quality_notes": "Retain every recorded lap. Mark impacts, off-tracks, missed braking points, spins, traffic-like interruptions and abnormal slowdowns by lap and corner; use zone-level exclusions when an otherwise useful lap has one localized error.",
+      "notes": "Start with 55 L, Oreca 07 LMP2, standard Grand Prix layout, constant weather, zero tire wear and one unchanged setup. Drive five scored laps; up to two replacement laps are allowed, for seven scored laps maximum, if an error occurs. No live cue runner or beep is used."
+    },
+    {
+      "session_id": "zero_lico_shot_validation_01",
+      "collection_design": "recommendation_execution",
+      "objective": "Prospectively test the frozen Spa-plus-Paul zero-LICO-shot response on six Bahrain zones while collecting same-session push controls.",
+      "target_zones": ["bhr_t01_t03", "bhr_t04", "bhr_t08", "bhr_t10", "bhr_t11", "bhr_t14_t15"],
+      "target_zones_source": "bahrain_lmp2_zero_lico_shot_static_v1",
+      "minimum_clean_laps": 7,
+      "lico_variation_guidance": "Fixed seven-lap P/L/L/P/L/L/P schedule. On each LICO lap, fully release at every beep and coast to the normal braking point. The same static zone plan is repeated on all four LICO laps; action distance varies between zones, not between laps.",
+      "execution_quality_notes": "Record all cues, misses and localized errors. Preserve clean phase-specific signals; do not convert one corner error into a whole-lap exclusion. Native LMU DuckDB recording and LICOR live telemetry logging are mandatory.",
+      "notes": "Frozen before any Bahrain LICO outcome. Six cues per LICO lap, 24 expected beeps. T05-T07 and T13 remain silent validation-only zones."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "envelope_id": "bahrain_upstream_capture_v2",
+  "status": "candidate_capture_only_not_live_authority",
+  "source_run_id": "bahrain_push_20260911_212732",
+  "method": "Five push approaches; sustained full throttle allowing shift cuts shorter than 0.25 s; one second of pre-action context; 25 m capture margin; maximum 500 m detector lookback. This does not establish safe/optimal action lengths or geometric straightness.",
+  "distance_meaning": "Lift lead before the median full-push brake onset, not coast length until the LICO brake onset.",
+  "outcome_policy": "Separate capture envelopes may overlap previous recovery intervals. They must not become additive outcome windows. Frozen scoring boundaries are stored in the session track_zones.json.",
+  "candidate_envelopes": [
+    {"zone_id": "bhr_t01_t03", "capture_start_m": 75, "earliest_candidate_lift_m": 100, "push_brake_reference_m": 575.835022},
+    {"zone_id": "bhr_t04", "capture_start_m": 880, "earliest_candidate_lift_m": 905, "push_brake_reference_m": 1387.881104},
+    {"zone_id": "bhr_t11", "capture_start_m": 2800, "earliest_candidate_lift_m": 2825, "push_brake_reference_m": 3322.345459},
+    {"zone_id": "bhr_t14_t15", "capture_start_m": 4245, "earliest_candidate_lift_m": 4270, "push_brake_reference_m": 4769.417969}
+  ],
+  "promotion_gates": [
+    "Inspect trajectory/steering and previous-corner recovery before approving early actions.",
+    "Sample acceleration from push traces at the actual proposed lift; never clip a long action onto the old 1.5-ratio grid.",
+    "Use local response observations at varied doses before authorizing aggressive lifts.",
+    "Audit the 8 s and 500 m detector lookback limits when a requested action approaches them."
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "analysis_id": "bahrain_native_fixed_distance_v2",
+  "supersedes": "analysis_v1 local metrics: held-distance interpolation bug",
+  "prediction_status": "original pre-run predictions unchanged; scoring corrected",
+  "recovery_status": "post-hoc fixed endpoints; diagnostic, not prospective score",
+  "fuel_interval_m": [
+    100,
+    5350
+  ],
+  "observed_fuel_saved_l": 0.17185973134341737,
+  "observed_official_time_lost_s": 0.4000000000005457,
+  "observed_fixed_time_lost_s": 0.41367335858467413,
+  "baseline": "same-run push laps 23,26,29 for prospective score only; not response training",
+  "limitations": [
+    "Four LICO repetitions at one planned dose per zone; no local response curve identified.",
+    "Native scoring distance changes about every 0.2s; channel-timestamp interpolation is approximate.",
+    "Negative T1 time difference is not a causal speed-up claim.",
+    "Silent-zone deltas are context diagnostics, not measured LICO effects.",
+    "The native impact flag on lap29 is a retained driver-reviewed audit note."
+  ],
+  "source_hashes": {
+    "data\\Bahrain International Circuit_P_2026-09-12T02_48_51Z.duckdb": "bf4a2f5e679629efb0e78f7476d962102697b38cdaac000179e1f1c7eac23054",
+    "data\\Bahrain International Circuit_P_2026-09-12T01_49_14Z.duckdb": "36ed02a48914b285ed449183e67f1942bf4bc275484aea57bcba2efe178994bb",
+    "config\\datasets\\bahrain_lmp2_circuit_c_2026-09.json": "726045c30bb1ba774920015f476b4e303d6a37c9fa310df410541a59fd552aec",
+    "config\\driver_reviews\\bahrain_lmp2_push_review_2026-09-11.json": "a2892a0c60fbf89d2c0ca90a30230c15a02613a7350610b129a6c5840ef3964c",
+    "data\\processed\\experimental\\bahrain_lmp2_transfer_2026_09\\sessions\\bahrain_lico_20260911_224825\\lap_schedule.csv": "dfe7e12d6f7df22cfe3c6a62e188b2c157df9d99ee36925e1c1f52a6e261ea21",
+    "data\\processed\\experimental\\bahrain_lmp2_transfer_2026_09\\sessions\\bahrain_lico_20260911_224825\\telemetry.csv": "37fe6d5855dcb57c919614f2c832c7ffe21631aa0181b8bb5b38d357dfa0d2c5",
+    "data\\processed\\experimental\\bahrain_lmp2_transfer_2026_09\\sessions\\bahrain_lico_20260911_224825\\physical_references.csv": "086610a6b978633b8e2a875eefa81b73b2c333133f215627f64db5b159969d04",
+    "data\\processed\\experimental\\bahrain_lmp2_transfer_2026_09\\sessions\\bahrain_lico_20260911_224825\\plan.csv": "a44bdf709ad9398fa3d5f4d7563573abece7fc1b9be486b0c8868201a6793125",
+    "data\\processed\\experimental\\bahrain_lmp2_transfer_2026_09\\sessions\\bahrain_lico_20260911_224825\\predictions.csv": "16c906900aa3e7844845388a9fb63107450554a325f9dfd3b313a48e397854e0",
+    "data\\processed\\experimental\\bahrain_lmp2_transfer_2026_09\\sessions\\bahrain_lico_20260911_224825\\track_zones.json": "cb47924f57149786d4545ab67f89d0cbdeec7fa33298afc724d4c10295e500ee",
+    "data\\processed\\experimental\\bahrain_lmp2_transfer_2026_09\\sessions\\bahrain_lico_20260911_224825\\plan_manifest.json": "0929a59098e4d7d24861dc31b173d6ee065c0682a74eb33063f09e163372302d",
+    "scripts\\analyze_bahrain_transfer_v2.py": "4272606dcb36827bd4c02652887d3d3fb70c4681e91a632de9358c4f5ac2acb3",
+    "scripts\\analyze_bahrain_lico_validation.py": "5e4ce0f6b0044848a84b604a088a211908e3b0fe89fffe5b16e2895095c2847b",
+    "src\\licor\\analysis\\fixed_distance.py": "3bf51c91e7b44e7779aeb5e8155ce735d0dd682454ea2f734d5ef10b131f1f27"
+  },
+  "prior_analysis_hashes": {
+    "analysis_manifest.json": "c8a36d707e4bf4f00f76c3b3ad1d0213556376799781acec373dbb0be870058d",
+    "data_quality.json": "ad6f9dafca5620b8202f9782b2add4295eddc1b38a14a26681086b7f0d3fbdcc",
+    "fixed_distance_passes.csv": "91fd79049a0064056164f6be602aba0c0e5f408e9e052a869cf1ccb2d12854b2",
+    "lap_summary.csv": "949089e5d5596c904cc89c8db3e2a3b5ba851c0d49d3e20d9de65a967465f63f",
+    "lico_pass_scores.csv": "390922215c6ebd1c35d3d181f4d891584c9da6e5e2cc4152cf63b3b5d8aff4b1",
+    "native_zone_passes.csv": "7a026642ce409877d49fb47ce4b68f5921809d5c897f0986ce3e8d585a04fe12",
+    "zone_verdicts.csv": "d2662ff9a38976555ede164f263d4b430a0a8d129a8a2968da81695dd638f8ca"
+  },
+  "artifact_hashes": {
+    "candidate_action_grid.csv": "dde64b357010d24c0661d68c2f7a7a0e08d8fbe380ac75cabfbbb5d538eb7863",
+    "fixed_distance_passes.csv": "2a6d0f2509c82adabdc656fb1e08862f6176ad368ede306a8dd7eb33f8788dd3",
+    "lap_summary.csv": "0613bfe3bcdb5afcceb631794b577f2b56dada8fe68064dd78254838064ab410",
+    "lico_pass_scores.csv": "26a7b2362e736d510c6ff269cb043d2b0f879f1c2ebcb16fe0aa94966f04397d",
+    "upstream_envelope.csv": "6e306a59d35574548ca10a953c315a74c92f1feb3b02024d20f98186c910f09f",
+    "zone_scores.csv": "59709342cbf2c0b0c41abda95f3f314540cf67c83215356a68a61ef9f39a7e9b"
+  }
+}

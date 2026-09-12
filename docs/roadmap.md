@@ -4,7 +4,7 @@ Use this roadmap as the main handoff document for future Codex sessions. Start
 new work from the active priorities below, keep edits small, and update this
 file whenever the strategy changes meaningfully.
 
-## Active Priorities — 2026-09-10
+## Active Priorities — 2026-09-11
 
 The [September restart plan](restart_plan_2026-09.md) is the current execution
 plan. It supersedes the historical sequencing below. Historical completion
@@ -16,11 +16,34 @@ marks describe implemented artifacts, not proof of predictive performance.
    collection protocol, separate from race-strategy target optimization.
 3. Preserve the finalized five-lap confirmation as held-out validation evidence
    rather than refitting it; the driver heard all 12 cues.
-4. Build the pooled ML table, grouped split manifest and simple leakage-safe
-   baselines. Treat the two Spa↔Paul folds as diagnostic stress tests only.
+4. [Table/splits complete] Run the simple leakage-safe baselines on the pooled
+   ML table. The action-only and first acceleration-conditioned baselines now
+   exist; compare only on paired coverage. Treat the two Spa↔Paul folds as
+   diagnostic stress tests only.
 5. Collect two additional same-LMP2 circuits with a short frozen protocol, then
    run meaningful leave-one-circuit-out low-data benchmarks before considering
    a hierarchical model or adaptive live authority.
+
+Circuit selection now has a driver-repeatability gate: clean-lap and brake/lift
+repeatability are double-weighted against physical zone diversity. Bahrain is
+selected as circuit C for its reported driver repeatability and clear
+long-straight/heavy-braking LICO opportunities. Imola, COTA, Sebring and
+Interlagos remain candidates for circuit D; reject any circuit below 3/5 for
+repeatability.
+
+The Bahrain circuit-C push protocol is frozen in
+`config/collection_protocols/bahrain_lmp2_circuit_c_v1.json`. Its first native
+run, `bahrain_push_20260911_212732`, contains outlap 15 and five complete push
+laps 16–20. Laps 18–20 have localized driver-reviewed exit errors: T15 exit on
+18, T4 mid/exit on 19, and T15 apex/exit on 20. Their approach and brake-onset
+signals remain usable, while contaminated local outcomes must be masked. The
+seven-lap LICO validation is now complete. Its corrected native score is
+`0.1719 L` over the common 100–5350 m interval for `0.400 s` on official lap
+times. The first local analysis had a repeated-distance interpolation bug;
+`analysis_v2_final` supersedes it, with the pre-run predictions preserved.
+The three-circuit ML v2 table uses native timestamp interpolation for all
+circuits. See `docs/bahrain_transfer_review_2026-09-11.md` for the score,
+upstream capture audit, retrospective comparisons and remaining data gates.
 
 Confirmed: T03 and T08-T09 starts have moved 75 m upstream, tire wear is disabled
 for the pilot, and simulator time is the collection constraint. The first
@@ -475,7 +498,8 @@ Notes:
 
 ## Phase 10: Cross-Circuit Transfer And Low-Data Adaptation
 
-Status: design-started.
+Status: three-circuit pooled table, grouped evaluations and corrected circuit-C
+prospective score complete; circuit D selection pending driver repeatability.
 
 Goal: move from Spa-specific methodology to a reusable cross-circuit system that
 can bootstrap from very small circuit-specific samples.
@@ -508,7 +532,7 @@ attempt before implementing new-circuit code paths.
 
 - [x] Decide that future live reaction-time adaptation should stay deferred and
   documented, rather than delaying the transfer-oriented work.
-- [ ] Define a transferable zone-prior schema that separates:
+- [x] Define a transferable zone-prior schema that separates:
   - geometry and approach descriptors that can travel across circuits;
   - Spa-derived expectation ranges for fuel, time, and execution sensitivity;
   - uncertainty/support signals that determine when manual review is still
@@ -516,12 +540,12 @@ attempt before implementing new-circuit code paths.
 - [x] Add the first conservative transferable-archetype layer that can
   materialize a circuit-local `StrategyPriorTable` from a reviewed
   `TrackZoneTable` without changing the optimizer contract.
-- [ ] Define the first new-circuit bootstrap workflow:
+- [x] Define the first new-circuit bootstrap workflow:
   - push-baseline laps;
   - automatic candidate-zone proposal;
   - low-budget varied-LICO calibration;
   - human review only on ambiguous or out-of-distribution zones.
-- [ ] Define the metadata and artifact contract for transfer runs so provenance
+- [x] Define the metadata and artifact contract for transfer runs so provenance
   survives through `zone_pass`, planning, replay, and live review outputs.
 - [x] Add the first transfer-bootstrap provenance table and readiness checklist
   so circuit-local priors can be audited before any new-circuit collection.
@@ -562,10 +586,12 @@ Current interpretation:
 ## Recommended Next Codex Task
 
 ```text
-Build a pooled run/lap/zone ML table and a leakage-safe grouped evaluation
-harness without refitting `paul_pilot_20260909_232207`. Compare the local curve,
-the heuristic archetype and a simple pooled regularized/monotone baseline. Fit
-baselines and transforms inside each fold, group by whole run/circuit, and label
-Spa↔Paul results as diagnostic stress tests. Then freeze the first circuit-C
-zero-LICO-shot prediction and its short collection protocol.
+Use the corrected Bahrain score and three-circuit benchmark in
+docs/bahrain_transfer_review_2026-09-11.md. Select circuit D using the driver's
+repeatability assessment, collect five push laps, audit wide upstream capture
+and recovery boundaries, then freeze a seven-lap P/A/B/P/B/A/P validation with
+two conservative action doses per selected zone. Larger lifts require a
+separate response-support gate; a wide capture envelope is not a live cue.
+Compare fixed held-out laps at local calibration budgets 0,1,2 and retain an
+independent later run/circuit for confirming the claimed adaptation speed.
 ```

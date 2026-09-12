@@ -65,6 +65,7 @@ def build_labeled_zone_passes(
     project_root: str | Path = ".",
     driver_review_file: str | Path | None = None,
     config: ZonePassConfig | None = None,
+    include_run_ids: set[str] | None = None,
 ) -> pl.DataFrame:
     """Rebuild zone-pass observations from labeled LMU telemetry files."""
 
@@ -73,6 +74,8 @@ def build_labeled_zone_passes(
     root = Path(project_root)
     frames = []
     for run in labels.runs:
+        if include_run_ids is not None and run.run_id not in include_run_ids:
+            continue
         if not run.include_in_lap_summary:
             continue
         lap_numbers = set(run.valid_laps | run.borderline_laps)

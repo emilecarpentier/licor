@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "dataset_id": "bahrain_lmp2_circuit_c_2026-09",
+  "track_name": "Bahrain International Circuit",
+  "car_class": "LMP2_ELMS",
+  "review_status": "driver_reviewed",
+  "notes": "Driver-reported localized mistakes from the first Bahrain push run. Phase masks are consumed by the Bahrain zero-shot builder; they must not be converted into whole zone-pass exclusions.",
+  "zone_pass_exclusions": [],
+  "zone_pass_annotations": [
+    {
+      "run_id": "bahrain_lico_20260911_224825",
+      "lap_number": 29,
+      "zone_id": "bhr_t01_t03",
+      "review_tags": ["native_impact_transition", "driver_reported_no_notable_error", "retain_for_analysis"],
+      "notes": "Boolean LastImpactMagnitude toggled around 745-755 m. Driver noticed no notable error and lap29 was the fastest complete lap, so retain but keep the signal visible."
+    }
+  ],
+  "phase_metric_masks": [
+    {
+      "run_id": "bahrain_push_20260911_212732",
+      "lap_number": 19,
+      "zone_id": "bhr_t05_t07",
+      "preserved_metrics": ["brake_onset", "brake_severity", "apex_speed"],
+      "excluded_metrics": ["zone_elapsed_time", "zone_fuel_used", "pre_action_acceleration"],
+      "reason": "Derived overlap mask: the driver-reported T4 exit error spans 1515-1800 m and overlaps the T05-T07 capture start (1681 m) and pre-action acceleration windows. Preserve the later braking event."
+    },
+    {
+      "run_id": "bahrain_push_20260911_212732",
+      "lap_number": 18,
+      "zone_id": "bhr_t14_t15",
+      "preserved_metrics": ["pre_action_acceleration", "approach_speed", "brake_onset", "brake_severity", "apex_speed"],
+      "excluded_metrics": ["zone_elapsed_time", "zone_fuel_used", "exit_speed", "exit_trajectory"],
+      "reason": "Wide T15 exit; approach, braking and apex remain usable."
+    },
+    {
+      "run_id": "bahrain_push_20260911_212732",
+      "lap_number": 19,
+      "zone_id": "bhr_t04",
+      "preserved_metrics": ["pre_action_acceleration", "approach_speed", "brake_onset", "brake_severity"],
+      "excluded_metrics": ["zone_elapsed_time", "zone_fuel_used", "apex_speed", "exit_speed", "exit_trajectory"],
+      "reason": "Rear-tire slide and wide T4 exit; approach and braking remain usable."
+    },
+    {
+      "run_id": "bahrain_push_20260911_212732",
+      "lap_number": 20,
+      "zone_id": "bhr_t14_t15",
+      "preserved_metrics": ["pre_action_acceleration", "approach_speed", "brake_onset", "brake_severity"],
+      "excluded_metrics": ["zone_elapsed_time", "zone_fuel_used", "apex_speed", "exit_speed", "exit_trajectory"],
+      "reason": "Excess T15 apex speed and wide exit; approach and brake onset remain usable."
+    }
+  ]
+}

@@ -47,7 +47,9 @@ def test_loads_collection_protocol_to_frame(tmp_path):
 
 
 def test_loads_spa_v2_protocol_config():
-    protocol = load_collection_protocol("config/collection_protocols/spa_lmp2_v2_protocol.json")
+    protocol = load_collection_protocol(
+        "config/collection_protocols/spa_lmp2_v2_protocol.json"
+    )
     frame = protocol.to_frame()
 
     assert protocol.protocol_id == "spa_lmp2_v2_collection_protocol"
@@ -69,6 +71,34 @@ def test_loads_spa_v2_protocol_config():
     ).row(0, named=True)
     assert recommendation["target_zones"] == []
     assert recommendation["target_zones_source"] == "from_exported_plan"
+
+
+def test_loads_bahrain_circuit_c_push_protocol():
+    protocol = load_collection_protocol(
+        "config/collection_protocols/bahrain_lmp2_circuit_c_v1.json"
+    )
+    frame = protocol.to_frame()
+
+    assert protocol.dataset_id == "bahrain_lmp2_circuit_c_2026-09"
+    assert frame.select(
+        "session_id", "collection_design", "minimum_clean_laps", "target_zones"
+    ).rows() == [
+        ("baseline_push_01", "baseline", 5, []),
+        (
+            "zero_lico_shot_validation_01",
+            "recommendation_execution",
+            7,
+            [
+                "bhr_t01_t03",
+                "bhr_t04",
+                "bhr_t08",
+                "bhr_t10",
+                "bhr_t11",
+                "bhr_t14_t15",
+            ],
+        ),
+    ]
+    assert "No intentional LICO" in frame["lico_variation_guidance"][0]
 
 
 def test_normalizes_legacy_pit_stop_collection_design(tmp_path):

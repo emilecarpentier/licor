@@ -1,0 +1,87 @@
+{
+  "dataset_id": "bahrain_lmp2_circuit_c_2026-09",
+  "description": "Prospective circuit-C LMP2 dataset. Bahrain was selected for high driver repeatability and clear long-straight/heavy-braking LICO opportunities. The first run is a push-only calibration collected before frozen LICO predictions.",
+  "runs": [
+    {
+      "run_id": "bahrain_push_20260911_212732",
+      "file": "data/Bahrain International Circuit_P_2026-09-12T01_49_14Z.duckdb",
+      "track": "Bahrain International Circuit",
+      "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397",
+      "session_type": "Practice",
+      "run_type": "push_baseline",
+      "collection_label": "none",
+      "labels_quality": "driver_reviewed",
+      "valid_laps": [16, 17],
+      "borderline_laps": [18, 19, 20],
+      "context_laps": [],
+      "excluded_laps": [15],
+      "collection_protocol_id": "bahrain_lmp2_circuit_c_v1",
+      "collection_session_id": "baseline_push_01",
+      "collection_design": "baseline",
+      "target_zones": [],
+      "execution_quality": "partial",
+      "driver_notes": "Five complete push laps recorded after outlap 15. Driver display labels are one greater at the finish line: display 19/20/21 map to DuckDB laps 18/19/20. Lap18 has a wide T15 exit; lap19 has a rear-tire slide and wide T4 exit; lap20 carries too much T15 apex speed and exits wide. Retain clean approach/braking signals and mask contaminated mid-corner/exit outcomes when zones are built.",
+      "lap_reviews": [
+        {
+          "lap_number": 15,
+          "action": "exclude_outlap",
+          "reason": "Telemetry starts in the pits; this is the recorded outlap."
+        },
+        {
+          "lap_number": 18,
+          "action": "keep_prebrake_mask_t15_exit",
+          "reason": "Wide final-corner exit. T15 approach and braking are usable; final-corner exit time is not a clean push reference.",
+          "turn_label": "T15",
+          "affected_distance_range_m": [4980.0, 5380.0],
+          "preserved_metrics": ["pre_action_acceleration", "approach_speed", "brake_onset", "brake_severity", "apex_speed"],
+          "excluded_metrics": ["zone_elapsed_time", "zone_fuel_used", "exit_speed", "exit_trajectory"]
+        },
+        {
+          "lap_number": 19,
+          "action": "keep_prebrake_mask_t04_mid_exit",
+          "reason": "Rear-tire slide and wide T4 exit. T4 approach and braking are usable; mid-corner and exit time are contaminated.",
+          "turn_label": "T4",
+          "affected_distance_range_m": [1515.0, 1800.0],
+          "preserved_metrics": ["pre_action_acceleration", "approach_speed", "brake_onset", "brake_severity"],
+          "excluded_metrics": ["zone_elapsed_time", "zone_fuel_used", "apex_speed", "exit_speed", "exit_trajectory"]
+        },
+        {
+          "lap_number": 20,
+          "action": "keep_prebrake_mask_t15_apex_exit",
+          "reason": "Excessive final-corner apex speed and wide exit. T15 approach and brake onset are usable; brake-release, apex and exit outcomes are contaminated.",
+          "turn_label": "T15",
+          "affected_distance_range_m": [4890.0, 5200.0],
+          "preserved_metrics": ["pre_action_acceleration", "approach_speed", "brake_onset", "brake_severity"],
+          "excluded_metrics": ["zone_elapsed_time", "zone_fuel_used", "apex_speed", "exit_speed", "exit_trajectory"]
+        }
+      ]
+    },
+    {
+      "run_id": "bahrain_lico_20260911_224825",
+      "file": "data/Bahrain International Circuit_P_2026-09-12T02_48_51Z.duckdb",
+      "track": "Bahrain International Circuit",
+      "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397",
+      "session_type": "Practice",
+      "run_type": "push_lico_interleaved_validation",
+      "collection_label": "recommendation_execution",
+      "labels_quality": "driver_reviewed",
+      "valid_laps": [23, 24, 25, 26, 27, 28, 29],
+      "borderline_laps": [],
+      "context_laps": [22],
+      "excluded_laps": [],
+      "include_in_lap_summary": true,
+      "collection_protocol_id": "bahrain_lmp2_circuit_c_v1",
+      "collection_session_id": "zero_lico_shot_validation_01",
+      "collection_design": "recommendation_execution",
+      "target_zones": ["bhr_t01_t03", "bhr_t04", "bhr_t08", "bhr_t10", "bhr_t11", "bhr_t14_t15"],
+      "target_zones_source": "bahrain_lmp2_zero_lico_shot_static_v1",
+      "planned_lico_profile_id": "bahrain_lmp2_zero_lico_shot_static_v1",
+      "planned_lico_profile_description": "Frozen static plan repeated on laps 24, 25, 27 and 28 within P/L/L/P/L/L/P; zone action distances vary by push braking geometry.",
+      "audio_cue_plan_id": "bahrain_lmp2_zero_lico_shot_static_v1",
+      "execution_quality": "clean",
+      "driver_notes": "Driver reported no notable driving error, appropriate zone identification and generally good lift points. T10 felt too strong, with an estimated 0.3-0.4 s local loss; very light LICO may remain plausible. Native LastImpactMagnitude toggled near 750 m on lap29, but the driver reported no notable incident and the lap was the fastest of the block, so it is retained with a review tag rather than excluded."
+    }
+  ]
+}

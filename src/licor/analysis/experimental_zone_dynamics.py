@@ -17,6 +17,8 @@ EXPERIMENTAL_TYRE_CHANNELS = {
     "TyresTempCentre": "centre_temp_c",
     "TyresRimTemp": "rim_temp_c",
 }
+LMU_LONGITUDINAL_ACCEL_SOURCE_CHANNEL = "G Force Lat"
+STANDARD_GRAVITY_MPS2 = 9.80665
 
 
 @dataclass(frozen=True)
@@ -66,6 +68,17 @@ def build_experimental_lap_telemetry(
             ).alias(alias),
         ).sort("ts")
         enriched = enriched.join_asof(mean_frame, on="ts", strategy="backward")
+    if LMU_LONGITUDINAL_ACCEL_SOURCE_CHANNEL in channels:
+        channel = telemetry.fixed_channel(LMU_LONGITUDINAL_ACCEL_SOURCE_CHANNEL)
+        if not channel.is_empty():
+            acceleration = channel.select(
+                "ts",
+                pl.col("value").alias("raw_lmu_g_force_lat_g"),
+                (-pl.col("value") * STANDARD_GRAVITY_MPS2).alias(
+                    "longitudinal_accel_sensor_mps2"
+                ),
+            ).sort("ts")
+            enriched = enriched.join_asof(acceleration, on="ts", strategy="backward")
     return enriched.sort(["lap_number", "ts"])
 
 
@@ -73,6 +86,7 @@ def build_labeled_experimental_lap_samples(
     *,
     dataset_label_file: str | Path,
     project_root: str | Path = ".",
+    include_run_ids: set[str] | None = None,
 ) -> pl.DataFrame:
     """Rebuild labelled lap telemetry with experimental tyre context columns."""
 
@@ -80,13 +94,17 @@ def build_labeled_experimental_lap_samples(
     root = Path(project_root)
     frames = []
     for run in labels.runs:
+        if include_run_ids is not None and run.run_id not in include_run_ids:
+            continue
         if not run.include_in_lap_summary:
             continue
         lap_numbers = set(run.valid_laps | run.borderline_laps)
         if not lap_numbers:
             continue
         with LmuTelemetryDatabase(root / run.file) as telemetry:
-            samples = build_experimental_lap_telemetry(telemetry, lap_numbers=lap_numbers)
+            samples = build_experimental_lap_telemetry(
+                telemetry, lap_numbers=lap_numbers
+            )
         if samples.is_empty():
             continue
         frames.append(
@@ -143,7 +161,9 @@ def summarize_experimental_zone_dynamics(
     _require_columns(zone_passes, required_zone_columns, "zone passes")
     _require_columns(lap_samples, required_sample_columns, "lap samples")
 
-    comparable = zone_passes.filter(pl.col("validity_label").is_in(dynamics_config.valid_labels))
+    comparable = zone_passes.filter(
+        pl.col("validity_label").is_in(dynamics_config.valid_labels)
+    )
     if comparable.is_empty():
         return _empty_experimental_zone_dynamics_frame()
 
@@ -172,9 +192,9 @@ def summarize_experimental_zone_dynamics(
     if not rows:
         return _empty_experimental_zone_dynamics_frame()
 
-    dynamics = pl.DataFrame(rows, schema=_EXPERIMENTAL_ZONE_DYNAMICS_SCHEMA, strict=False).select(
-        _EXPERIMENTAL_ZONE_DYNAMICS_COLUMNS
-    )
+    dynamics = pl.DataFrame(
+        rows, schema=_EXPERIMENTAL_ZONE_DYNAMICS_SCHEMA, strict=False
+    ).select(_EXPERIMENTAL_ZONE_DYNAMICS_COLUMNS)
     return _attach_baseline_deltas(dynamics, config=dynamics_config).sort(
         ["zone_id", "run_id", "lap_number"]
     )
@@ -188,7 +208,9 @@ def build_experimental_zone_dynamics(
 ) -> pl.DataFrame:
     """Compatibility wrapper with an explicit experimental builder name."""
 
-    return summarize_experimental_zone_dynamics(zone_passes, lap_telemetry, config=config)
+    return summarize_experimental_zone_dynamics(
+        zone_passes, lap_telemetry, config=config
+    )
 
 
 def attach_baseline_deltas_to_experimental_zone_dynamics(
@@ -254,7 +276,9 @@ def _zone_dynamics_row(
             zone_samples,
             threshold=config.brake_threshold_pct,
         )
-        brake_area_pct_s = _integrated_brake_area(zone_samples, threshold=config.brake_threshold_pct)
+        brake_area_pct_s = _integrated_brake_area(
+            zone_samples, threshold=config.brake_threshold_pct
+        )
         time_above_80pct_brake_s = _duration_above_threshold(
             zone_samples,
             threshold=config.high_brake_threshold_pct,
@@ -281,7 +305,9 @@ def _zone_dynamics_row(
         "fuel_used_l": _optional_float(zone_pass_row.get("fuel_used_l")),
         "elapsed_time_s": _optional_float(zone_pass_row.get("elapsed_time_s")),
         "brake_start_m": _optional_float(zone_pass_row.get("brake_start_m")),
-        "brake_start_speed_kph": _optional_float(zone_pass_row.get("brake_start_speed_kph")),
+        "brake_start_speed_kph": _optional_float(
+            zone_pass_row.get("brake_start_speed_kph")
+        ),
         "apex_distance_m": apex_distance_m,
         "apex_speed_kph": apex_speed_kph,
         "exit_speed_kph": _optional_float(zone_pass_row.get("exit_speed_kph")),
@@ -308,7 +334,9 @@ def _attach_baseline_deltas(
 ) -> pl.DataFrame:
     baseline_condition = pl.col("lico_intensity") == config.baseline_intensity
     if "collection_design" in dynamics.columns:
-        baseline_condition = baseline_condition | (pl.col("collection_design") == "baseline")
+        baseline_condition = baseline_condition | (
+            pl.col("collection_design") == "baseline"
+        )
     baseline = dynamics.filter(baseline_condition)
     if config.exclude_detected_lico_from_baseline and "has_lico" in baseline.columns:
         baseline = baseline.filter(~pl.col("has_lico"))
@@ -319,36 +347,46 @@ def _attach_baseline_deltas(
         pl.col("fuel_used_l").mean().alias("baseline_mean_fuel_used_l"),
         pl.col("elapsed_time_s").mean().alias("baseline_mean_elapsed_time_s"),
         pl.col("brake_start_m").mean().alias("baseline_mean_brake_start_m"),
-        pl.col("brake_start_speed_kph").mean().alias("baseline_mean_brake_start_speed_kph"),
+        pl.col("brake_start_speed_kph")
+        .mean()
+        .alias("baseline_mean_brake_start_speed_kph"),
         pl.col("apex_speed_kph").mean().alias("baseline_mean_apex_speed_kph"),
         pl.col("exit_speed_kph").mean().alias("baseline_mean_exit_speed_kph"),
-        pl.col("carcass_temp_zone_start_c").mean().alias("baseline_mean_carcass_temp_zone_start_c"),
-        pl.col("rubber_temp_zone_start_c").mean().alias("baseline_mean_rubber_temp_zone_start_c"),
-        pl.col("centre_temp_zone_start_c").mean().alias("baseline_mean_centre_temp_zone_start_c"),
-        pl.col("rim_temp_zone_start_c").mean().alias("baseline_mean_rim_temp_zone_start_c"),
+        pl.col("carcass_temp_zone_start_c")
+        .mean()
+        .alias("baseline_mean_carcass_temp_zone_start_c"),
+        pl.col("rubber_temp_zone_start_c")
+        .mean()
+        .alias("baseline_mean_rubber_temp_zone_start_c"),
+        pl.col("centre_temp_zone_start_c")
+        .mean()
+        .alias("baseline_mean_centre_temp_zone_start_c"),
+        pl.col("rim_temp_zone_start_c")
+        .mean()
+        .alias("baseline_mean_rim_temp_zone_start_c"),
     )
     return (
         dynamics.join(baseline_summary, on="zone_id", how="left")
         .with_columns(
-            (
-                pl.col("baseline_mean_fuel_used_l") - pl.col("fuel_used_l")
-            ).alias("fuel_saved_vs_baseline_l"),
-            (
-                pl.col("elapsed_time_s") - pl.col("baseline_mean_elapsed_time_s")
-            ).alias("time_lost_vs_baseline_s"),
-            (
-                pl.col("brake_start_m") - pl.col("baseline_mean_brake_start_m")
-            ).alias("brake_start_delta_vs_baseline_m"),
+            (pl.col("baseline_mean_fuel_used_l") - pl.col("fuel_used_l")).alias(
+                "fuel_saved_vs_baseline_l"
+            ),
+            (pl.col("elapsed_time_s") - pl.col("baseline_mean_elapsed_time_s")).alias(
+                "time_lost_vs_baseline_s"
+            ),
+            (pl.col("brake_start_m") - pl.col("baseline_mean_brake_start_m")).alias(
+                "brake_start_delta_vs_baseline_m"
+            ),
             (
                 pl.col("brake_start_speed_kph")
                 - pl.col("baseline_mean_brake_start_speed_kph")
             ).alias("brake_start_speed_delta_vs_baseline_kph"),
-            (
-                pl.col("apex_speed_kph") - pl.col("baseline_mean_apex_speed_kph")
-            ).alias("apex_speed_delta_vs_baseline_kph"),
-            (
-                pl.col("exit_speed_kph") - pl.col("baseline_mean_exit_speed_kph")
-            ).alias("exit_speed_delta_vs_baseline_kph"),
+            (pl.col("apex_speed_kph") - pl.col("baseline_mean_apex_speed_kph")).alias(
+                "apex_speed_delta_vs_baseline_kph"
+            ),
+            (pl.col("exit_speed_kph") - pl.col("baseline_mean_exit_speed_kph")).alias(
+                "exit_speed_delta_vs_baseline_kph"
+            ),
             (
                 pl.col("carcass_temp_zone_start_c")
                 - pl.col("baseline_mean_carcass_temp_zone_start_c")
@@ -362,7 +400,8 @@ def _attach_baseline_deltas(
                 - pl.col("baseline_mean_centre_temp_zone_start_c")
             ).alias("centre_temp_zone_start_delta_vs_baseline_c"),
             (
-                pl.col("rim_temp_zone_start_c") - pl.col("baseline_mean_rim_temp_zone_start_c")
+                pl.col("rim_temp_zone_start_c")
+                - pl.col("baseline_mean_rim_temp_zone_start_c")
             ).alias("rim_temp_zone_start_delta_vs_baseline_c"),
         )
         .select(_EXPERIMENTAL_ZONE_DYNAMICS_WITH_BASELINE_COLUMNS)
@@ -470,9 +509,15 @@ def _null_baseline_columns() -> list[pl.Expr]:
         pl.lit(None, dtype=pl.Float64).alias("brake_start_speed_delta_vs_baseline_kph"),
         pl.lit(None, dtype=pl.Float64).alias("apex_speed_delta_vs_baseline_kph"),
         pl.lit(None, dtype=pl.Float64).alias("exit_speed_delta_vs_baseline_kph"),
-        pl.lit(None, dtype=pl.Float64).alias("carcass_temp_zone_start_delta_vs_baseline_c"),
-        pl.lit(None, dtype=pl.Float64).alias("rubber_temp_zone_start_delta_vs_baseline_c"),
-        pl.lit(None, dtype=pl.Float64).alias("centre_temp_zone_start_delta_vs_baseline_c"),
+        pl.lit(None, dtype=pl.Float64).alias(
+            "carcass_temp_zone_start_delta_vs_baseline_c"
+        ),
+        pl.lit(None, dtype=pl.Float64).alias(
+            "rubber_temp_zone_start_delta_vs_baseline_c"
+        ),
+        pl.lit(None, dtype=pl.Float64).alias(
+            "centre_temp_zone_start_delta_vs_baseline_c"
+        ),
         pl.lit(None, dtype=pl.Float64).alias("rim_temp_zone_start_delta_vs_baseline_c"),
     ]
 

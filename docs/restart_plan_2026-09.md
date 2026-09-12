@@ -199,15 +199,77 @@ zero-LICO-shot prediction before local LICO outcomes are visible. Record
 vehicle, driver and setup context so future effects can be distinguished rather
 than silently pooled.
 
-First build a pooled run/lap/zone table and leakage-safe split harness. Compare
+The pooled run/lap/zone table and leakage-safe split harness now exist under
+`data/processed/experimental/cross_circuit_ml_v1/`. Compare
 the current local curve, the existing heuristic archetype and a simple
 regularized/monotone pooled model. Spa-to-Paul and Paul-to-Spa are diagnostic
 stress tests only because there are just two circuits. Split before baseline
 construction and group by whole run/circuit; fit transforms on training only.
+The first pooled comparison now includes an acceleration-conditioned monotone
+model. Its pre-action acceleration is interpolated from fold-local clean-push
+profiles at the proposed physical lift ratio; same-pass post-lift acceleration
+is excluded. On the paired Spa↔Paul rows it does not yet beat action-only, so
+acceleration stays mandatory in the contract but no performance claim is made
+until circuits C and D add independent task variation.
 After circuits C and D, evaluate leave-one-circuit-out before deciding whether a
 hierarchical fuel/time model or multitask Gaussian process is justified. Use
-only pre-action descriptors and normalized lift action. Defer deep meta-learning
+only verified pre-action descriptors and the physical planned-lift-lead to
+push-deceleration ratio. Defer deep meta-learning
 and reinforcement learning until simpler baselines and task diversity justify them.
+
+Select circuits C and D with a driver-repeatability gate. Score clean-lap and
+brake/lift repeatability at double weight relative to physical diversity, and
+reject a candidate below 3/5 for driver repeatability. The preferred pair is
+one high-diversity circuit and one high-repeatability circuit. Bahrain is now
+fixed as circuit C because the driver can repeat it reliably and it contains
+clear long-straight/heavy-braking LICO opportunities. Circuit D remains open.
+The Bahrain `baseline_push_01` protocol and push-only session pack are frozen.
+Run `bahrain_push_20260911_212732` is now recorded in a native DuckDB: lap15 is
+the outlap, laps16–20 are five complete push laps, and lap21 is only the short
+post-line fragment. Driver display labels 19/20/21 map to stored laps18/19/20.
+The first two push laps are clean whole laps. Lap18 retains a clean T15 approach,
+braking and apex but has a contaminated exit; lap19 retains the T4 approach and
+braking but has a rear-slide-contaminated mid/exit; lap20 retains T15 approach
+and brake onset but its excessive apex speed and wide exit contaminate the
+post-brake outcome. Build candidate zones from all usable physical inputs, keep
+metric-specific masks on the affected outcomes, and freeze any Bahrain
+zero-LICO-shot proposal before the varied-LICO block. The descriptor gate can
+therefore be assessed without discarding three otherwise useful laps; reduced
+T4/T15 outcome support must remain visible in uncertainty and can be augmented
+by the push laps in the later `P/L/L/P/L/L/P` block.
+
+That descriptor and freeze step is now complete. The first Bahrain static
+validation selects T01–T03, T04, T08, T10, T11 and T14–T15 at respectively
+`75/60/40/65/55/70 m`; T05–T07 and T13 remain validation-only. The normalized
+actions are based on each zone's push braking distance, not the manual capture
+window. Acceleration at the proposed lift is derived from push speed traces and
+enforced as a guardrail; the learned interaction remains shadow-only. The
+frozen pack passed hash verification and a 24-cue/48-crossing synthetic
+preflight. Run `bahrain_lico_20260911_224825` has now completed that seven-lap
+block. All 24 enabled cues fired on time. Against the same-run push laps, the
+corrected median result is `0.1719 L` over 100–5350 m for `0.400 s/lap` lost, compared
+with the frozen `0.2186 L` and `0.5820 s` prediction. Five of the six selected
+zones remain useful candidates. T10 is the exception: once the outcome window
+is extended for a recovery diagnostic, its 60.9 m executed coast costs a median
+`0.1984 s` for `0.0339 L`, with a maximum of `0.3054 s`. Earlier local
+values were biased by interpolation of repeated scoring distances and are
+superseded by native timestamp scoring. Keep T05–T07 and T13 silent, deprioritize the tested T10 action from
+the efficient plan, and preserve a very-light isolated T10 trial as optional.
+
+The corrected prospective score is locked; ML v2 contains 759 observations and
+three retrospective leave-one-circuit-out folds with native fixed-distance
+targets throughout. A separate 0/1/2-lap within-run calibration study improves
+fuel error quickly but provides only modest time improvement and no clear
+advantage over local-only estimation. Broader capture envelopes and direct
+push acceleration samples at candidate lifts now allow examination beyond the
+old 200 m window without authorizing unvalidated large actions. See
+`docs/bahrain_transfer_review_2026-09-11.md` for evidence and limitations.
+
+Next, select circuit D using driver repeatability. Its five-push protocol is
+prepared in `docs/circuit_d_push_protocol.md`; after intake, freeze two action
+intensities per selected zone in a seven-lap P/A/B/P/B/A/P block. A fourth
+circuit enables serious model development, not a guarantee of rapid learning
+or transfer to new drivers, setups or aggressive actions.
 
 Exit: transferred information reduces the local data needed to achieve a stated
 held-out accuracy/decision target compared with local-only fitting.

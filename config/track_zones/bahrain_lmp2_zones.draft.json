@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "track_name": "Bahrain International Circuit",
+  "car_class": "LMP2_ELMS",
+  "distance_unit": "m",
+  "status": "needs_driver_review",
+  "source": "Telemetry-derived circuit-C roster from Bahrain push run bahrain_push_20260911_212732. Boundaries isolate eight repeatable brake clusters on the LMU Lap Dist axis (5385 m observed lap length). The first static LICO block is prospective validation, not driver certification.",
+  "zones": [
+    {
+      "zone_id": "bhr_t01_t03", "turn_numbers": [1, 2, 3], "display_label": "T01-T03",
+      "start_distance_m": 350.0, "lico_window_start_m": 375.0, "brake_reference_m": 575.835022, "end_distance_m": 900.0,
+      "lico_eligible": true, "optimization_role": "candidate", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "Main-straight heavy braking; five stable push references. First validation action is capped below the available capture window."
+    },
+    {
+      "zone_id": "bhr_t04", "turn_numbers": [4], "display_label": "T04",
+      "start_distance_m": 1150.0, "lico_window_start_m": 1188.0, "brake_reference_m": 1387.881104, "end_distance_m": 1680.0,
+      "lico_eligible": true, "optimization_role": "candidate", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "Heavy braking after T3. Lap 19 approach and brake onset remain usable; its mid-corner and exit outcomes are masked."
+    },
+    {
+      "zone_id": "bhr_t05_t07", "turn_numbers": [5, 6, 7], "display_label": "T05-T07",
+      "start_distance_m": 1681.0, "lico_window_start_m": null, "brake_reference_m": 1819.122803, "end_distance_m": 2070.0,
+      "lico_eligible": false, "optimization_role": "validation_only", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "Repeatable light technical brake with strong ongoing acceleration and coupling to the T4 exit. No cue in the first block."
+    },
+    {
+      "zone_id": "bhr_t08", "turn_numbers": [8], "display_label": "T08",
+      "start_distance_m": 2071.0, "lico_window_start_m": 2090.0, "brake_reference_m": 2150.907471, "end_distance_m": 2350.0,
+      "lico_eligible": true, "optimization_role": "candidate", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "Distinct slow-corner brake with a short approach. First validation action is deliberately limited."
+    },
+    {
+      "zone_id": "bhr_t10", "turn_numbers": [10], "display_label": "T10",
+      "start_distance_m": 2360.0, "lico_window_start_m": 2460.0, "brake_reference_m": 2587.594727, "end_distance_m": 2800.0,
+      "lico_eligible": true, "optimization_role": "candidate", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "Sustained deceleration into the slow left; high acceleration at candidate lift positions requires a conservative action."
+    },
+    {
+      "zone_id": "bhr_t11", "turn_numbers": [11], "display_label": "T11",
+      "start_distance_m": 3080.0, "lico_window_start_m": 3120.0, "brake_reference_m": 3322.345459, "end_distance_m": 3580.0,
+      "lico_eligible": true, "optimization_role": "candidate", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "High-arrival-speed brake and the most stable push braking reference in this run."
+    },
+    {
+      "zone_id": "bhr_t13", "turn_numbers": [13], "display_label": "T13",
+      "start_distance_m": 3820.0, "lico_window_start_m": null, "brake_reference_m": 3980.325195, "end_distance_m": 4230.0,
+      "lico_eligible": false, "optimization_role": "validation_only", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "Repeatable braking but non-monotone upstream throttle profile and a distinct second brake on lap 16. Diagnostic only for the first block."
+    },
+    {
+      "zone_id": "bhr_t14_t15", "turn_numbers": [14, 15], "display_label": "T14-T15",
+      "start_distance_m": 4500.0, "lico_window_start_m": 4569.0, "brake_reference_m": 4769.417969, "end_distance_m": 5200.0,
+      "lico_eligible": true, "optimization_role": "candidate", "validation_end_rule": "manual_distance", "review_status": "needs_driver_review",
+      "notes": "Final-corner heavy braking. Laps 18 and 20 retain approach/brake references while contaminated outcome phases are masked."
+    }
+  ]
+}

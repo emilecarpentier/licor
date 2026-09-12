@@ -46,8 +46,9 @@ be required by the analysis pipeline.
 | --- | --- | --- | --- |
 | `gps_speed_mps` | `GPS Speed` | m/s | Cross-check for `Ground Speed`. |
 | `gear` | `Gear` | integer | Event-style table in observed LMU files. |
-| `g_lat` | `G Force Lat` | G | Cornering phase detection. |
-| `g_long` | `G Force Long` | G | Braking/acceleration validation. |
+| `raw_lmu_g_force_lat_g` | `G Force Lat` | G | Native channel retained for audit. In all 16 Spa/Paul files checked on 2026-09-10, this is the longitudinal axis despite its LMU name. |
+| `longitudinal_accel_sensor_mps2` | derived from `G Force Lat` | m/s² | `-raw_lmu_g_force_lat_g * 9.80665`; usable only while its correlation with speed-derived acceleration passes the version guard. |
+| `raw_lmu_g_force_long_g` | `G Force Long` | G | Native channel retained for audit; behaves like a lateral/steering-related axis in the current files and must not be used as longitudinal acceleration. |
 | `path_lateral_m` | `Path Lateral` | m | Track position signal. |
 | `track_edge_m` | `Track Edge` | m | Track-limit/context signal. |
 | `tyre_wear_pct_fl` | `Tyres Wear.value1` | % | Wheel ordering must be confirmed. |
@@ -1174,39 +1175,146 @@ requires every cue to remain within its declared tolerance and in plan order.
 
 ## Cross-Circuit Learning Tables
 
-To generalize beyond Spa without manually rebuilding every zone, LICOR should
-store reusable zone features and transfer-model outputs separately from
-driver-reviewed final configs.
+The first concrete contract is
+`config/ml/licor_lmp2_feature_contract_v1.json`. Its observation grain is
+`dataset_id / circuit_id / run_id / lap_number / zone_id`; the lineage key also
+retains the raw-file SHA-256, zone-definition hash and extractor version.
+`scripts/build_cross_circuit_ml_table.py` rebuilds Spa and Paul Ricard from the
+native DuckDB files and writes the versioned table, feature registry, split
+assignments, fold-local push references and fold feature views under
+`data/processed/experimental/cross_circuit_ml_v1/`.
 
-Suggested `zone_feature` fields:
+The raw observation table is intentionally rich, but column availability is
+part of the schema. Each field is classified as identifier, static context,
+pre-action candidate, planned action, observed action, post-action outcome,
+quality or audit-only. Dynamic context such as approach speed and tyre
+temperature is not a decision input until its timestamp is explicitly proven
+to precede the decision cutoff. Same-pass braking, minimum-speed and exit
+quantities are outcomes or diagnostics, not pre-action predictors.
 
-- `track_name`
-- `car_class`
-- `zone_id`
-- `turn_numbers`
-- `approach_speed_kph`
-- `brake_reference_m`
-- `brake_start_speed_kph`
-- `brake_severity`
-- `straight_length_before_brake_m`
-- `corner_complexity_label`
-- `exit_acceleration_distance_m`
-- `baseline_fuel_used_l`
-- `baseline_elapsed_time_s`
-- `feature_quality`
+The primary transferable action is not normalized by the manually chosen LICO
+window. It is defined inside each fold as:
 
-Suggested `transfer_prior` fields:
+```text
+planned_lift_lead_vs_push_brake_m
+    = forward_distance(planned_lift_start_m,
+                       median_clean_push_brake_onset_m)
 
-- `source_model_id`
-- `target_track_name`
-- `target_zone_id`
-- `predicted_lico_feasibility`
-- `predicted_curve_shape`
-- `uncertainty_label`
-- `requires_manual_review`
-- `notes`
+planned_lift_lead_to_push_deceleration_ratio
+    = planned_lift_lead_vs_push_brake_m
+      / median_clean_push_brake_onset_to_min_speed_distance_m
+```
 
-Machine learning or heavier statistical models should use these tables to
-propose starting points for new circuits. They should reduce the calibration
-budget, not silently replace circuit-specific push laps, varied LICO laps, or
-manual review for unusual zones.
+Historical training retains the corresponding **executed** quantities and the
+coast length (`lico_distance_m`) separately. The old
+`lico_start_distance_before_brake_m` is explicitly renamed as a legacy lead to
+the manual brake reference in the pooled table; it must not masquerade as the
+physical push-braking ratio.
+
+Push references are fitted only after assigning `train`, `calibration` and
+`test` roles. A calibrated zero-LICO-shot fold may use clean push laps from the
+destination circuit as `calibration`, but those rows never fit the response
+model and no local LICO result may be inspected. Each reference needs at least
+three clean push passes per zone and carries its support and dispersion. Zones
+without a sustained braking event remain usable with absolute action fields,
+but the ratio is unavailable. Contract v1 also rejects a push denominator when
+its within-fold coefficient of variation exceeds `0.15`, when no stable
+acceleration recovery follows the minimum-speed point, or when the observed
+lift begins after the push brake onset.
+
+Manual `lico_window_start_m` and `zone_end_m` are capture/QC metadata. They do
+not appear in the ratio or its denominator. Fuel/time targets remain local to
+one zone and are rebuilt from fold-local push medians; the older globally
+attached `baseline_mean_*` and `*_vs_baseline_*` columns are diagnostic only
+and are removed from the raw cross-circuit observation table.
+
+Driver errors may contaminate only part of a zone and must therefore be masked
+by metric phase when the evidence supports that distinction. A slide or wide
+exit after an otherwise normal approach and brake onset invalidates local
+elapsed-time, exit-speed and related post-action targets for that pass, but it
+does not invalidate pre-action acceleration, approach speed or physical brake
+onset. Conversely, an entry or braking error invalidates those physical
+references as well. Whole-zone `driver_excluded` remains the fail-safe when the
+onset of the error cannot be localized. The raw pass and driver note stay in
+the audit table in every case.
+
+Transfer models should reduce the calibration budget, not silently replace
+circuit-specific push laps, varied LICO laps or manual review for unusual
+zones. With only Spa and Paul Ricard, both cross-circuit directions remain
+diagnostic stress tests rather than estimates of generalization.
+
+### Frozen scoring endpoint and recovery endpoint
+
+The manually reviewed `zone_end_m` remains the prospective scoring endpoint
+that was known when a plan was frozen. It must not be moved after inspecting a
+new-circuit result. A second, explicitly labeled recovery endpoint may be used
+as a post-run diagnostic when speed, elapsed-time or acceleration has not
+recovered by `zone_end_m`. It must:
+
+- be derived with one fixed rule for every lap in the comparison;
+- end before the next LICO action can contribute;
+- score push and LICO laps at the same absolute distances;
+- remain a separate column and artifact from the frozen score; and
+- be versioned into the next target definition only after the prospective
+  result has been preserved.
+
+This distinction prevents short capture windows from making an action appear
+cheap while also preventing an outcome-informed endpoint from silently
+improving or worsening the original frozen prediction. With corrected native
+timestamp interpolation, Bahrain T10's frozen endpoint at `2800 m` reports
+`0.133 s`; the diagnostic endpoint at `3080 m` reports a median `0.198 s` and a
+maximum `0.305 s`. Earlier `0.193/0.295 s` estimates are superseded because
+interpolation incorrectly used the last repeat of a held scoring distance.
+
+`fixed_distance.py` now interpolates crossing timestamps between the first
+samples of distinct native distance updates, then samples fuel/speed on their
+own timestamp grids. Distance resets at lap start are trimmed; internal
+non-monotonicity or missing coverage is rejected rather than extrapolated.
+All circuits in ML v2 use this same outcome rule. Physical source timestamps
+remain discrete; near-zero costs and negative observed deltas require caution.
+
+Upstream feature capture, the candidate action range, and the scoring outcome
+window are separate objects. Bahrain's `bahrain_lmp2_capture_envelope_v2.json`
+retains broader approaches (about 475–500 m lift lead) without changing the
+prospective score windows. Capture may overlap a previous zone; outcome costs
+must not be added across overlapping windows. A 500 m detector lookback is an
+implementation limit, not a physical maximum. Acceleration for candidates
+beyond the original ratio grid is sampled directly from push traces at the
+candidate; it must not be clipped to a smaller lift's acceleration.
+
+ML v2 labels scheduled push laps and silent zones using the session schedule.
+Natural short coasts remain detector diagnostics and do not become response
+training observations. Phase masks null only contaminated outcomes and
+apex-dependent descriptors; onset evidence remains available. Each target and
+physical denominator requires its own minimum support of three. Entire runs
+stay in one LOCO role. A separate within-run adaptation study explicitly labels
+its weaker independence and never alters the prospective frozen score.
+
+### Acceleration at the proposed lift
+
+The first transferable acceleration context is built from clean full-push laps,
+not from the LICO passage being predicted. For each physical braking event, the
+builder samples one-second approach windows ending `0.20 s` before points at
+`0`, `0.25`, `0.5`, `1.0` and `1.5` times the physical push deceleration
+distance ahead of the brake onset. The primary value is the median mapped sensor acceleration;
+a regression of ground speed against time is the fallback and sensor-axis
+check.
+
+Inside each fold, clean-push profiles are aggregated separately by circuit and
+zone. The proposed lift ratio selects an interpolated value:
+
+```text
+push_acceleration_at_planned_lift_mps2
+    = interpolate(fold_push_acceleration_profile,
+                  planned_lift_lead_to_push_deceleration_ratio)
+
+planned_acceleration_weighted_action
+    = planned_lift_lead_to_push_deceleration_ratio
+      * max(push_acceleration_at_planned_lift_mps2, 0)
+```
+
+This explicitly distinguishes a lift while the car is still accelerating from
+a lift near terminal speed. Ratios outside `[0, 1.5]` are clipped for the
+acceleration lookup and flagged as `clipped_low` or `clipped_high`; diagnostic
+model scores use only `in_range` rows. `observed_pre_lift_acceleration_mps2` remains an execution diagnostic:
+it is not silently substituted for the push counterfactual in static planning.

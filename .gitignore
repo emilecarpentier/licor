@@ -6,6 +6,9 @@ data/raw/
 data/processed/
 *.duckdb
 *.csv
+!docs/evidence/bahrain_zone_scores_v2.csv
+!docs/evidence/cross_circuit_ml_v2_metrics.csv
+!docs/evidence/bahrain_few_lap_adaptation_metrics.csv
 
 
 # Byte-compiled / optimized / DLL files
