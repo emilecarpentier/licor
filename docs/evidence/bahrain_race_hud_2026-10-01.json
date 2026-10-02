@@ -1,0 +1,24 @@
+{
+  "video": "D:/OBS/2026-10-01 21-11-01.mp4",
+  "duration_s": 802.8,
+  "method": "Manual visual transcription of extracted full-resolution frames; native top-right and bottom-right HUD only, excluding third-party debug overlay.",
+  "sync_method": "First HUD lap change bracketed between video246 and247; native lap event220.28. Second change occurs after354 and before356; final own finish between795 and797. Use video-native offset26.4s as approximate alignment, not sub-frame ground truth.",
+  "approx_video_minus_native_s": 26.4,
+  "rows": [
+    {"video_s":35,"context":"formation","lap_display":1,"total_display":6.4,"estimated":true,"fuel_l":55.0,"fuel_laps":19.8},
+    {"video_s":135,"context":"race_start","lap_display":1,"total_display":6.4,"estimated":true,"fuel_l":53.8,"fuel_laps":19.4},
+    {"video_s":246,"context":"before_first_crossing","lap_display":1,"total_display":6.4,"estimated":true,"fuel_l":51.0,"fuel_laps":18.4},
+    {"video_s":247,"context":"after_first_crossing","lap_display":2,"total_display":6.4,"estimated":true,"fuel_l":50.9,"fuel_laps":18.3},
+    {"video_s":249,"context":"after_first_crossing_settled","lap_display":2,"total_display":6.4,"estimated":true,"fuel_l":50.9,"fuel_laps":17.8},
+    {"video_s":354,"context":"before_second_crossing","lap_display":2,"total_display":6.4,"estimated":true,"fuel_l":48.1,"fuel_laps":16.9},
+    {"video_s":356,"context":"after_second_crossing","lap_display":3,"total_display":6.5,"estimated":true,"fuel_l":48.0,"fuel_laps":16.9},
+    {"video_s":464,"context":"after_third_crossing","lap_display":4,"total_display":6.5,"estimated":true,"fuel_l":45.2,"fuel_laps":15.8},
+    {"video_s":571,"context":"after_fourth_crossing","lap_display":5,"total_display":6.5,"estimated":true,"fuel_l":42.3,"fuel_laps":14.9},
+    {"video_s":684,"context":"after_fifth_crossing","lap_display":6,"total_display":6.5,"estimated":true,"fuel_l":39.4,"fuel_laps":13.8},
+    {"video_s":730,"context":"one_second_on_clock","lap_display":6,"total_display":6.5,"estimated":true,"fuel_l":38.3,"fuel_laps":13.4},
+    {"video_s":750,"context":"clock_expired_before_leader_finish","lap_display":6,"total_display":5.9,"estimated":true,"fuel_l":37.9,"fuel_laps":13.2},
+    {"video_s":776,"context":"near_leader_finish","lap_display":6,"total_display":5.9,"estimated":true,"fuel_l":37.2,"fuel_laps":13.0},
+    {"video_s":795,"context":"before_own_finish","lap_display":6,"total_display":6.0,"estimated":false,"fuel_l":36.6,"fuel_laps":12.8},
+    {"video_s":797,"context":"own_finish_confirmed","lap_display":6,"total_display":6.0,"estimated":false,"fuel_l":36.5,"fuel_laps":12.7}
+  ]
+}

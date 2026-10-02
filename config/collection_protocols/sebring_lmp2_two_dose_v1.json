@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "protocol_id": "sebring_lmp2_two_dose_v1",
+  "dataset_id": "sebring_lmp2_circuit_d_2026-09",
+  "track_name": "Sebring International Raceway",
+  "car_class": "LMP2_ELMS",
+  "purpose": "Prospective seven-zone validation of two frozen action doses before observing any Sebring LICO outcome.",
+  "required_run_metadata": ["collection_protocol_id", "collection_session_id", "collection_design", "target_zones", "execution_quality", "labels_quality", "driver_notes"],
+  "sessions": [{
+    "session_id": "two_dose_validation_01",
+    "collection_design": "recommendation_execution",
+    "objective": "Collect two repetitions of each zone dose and three interleaved push controls.",
+    "target_zones": ["sbr_t01", "sbr_t03", "sbr_t07", "sbr_t10", "sbr_t13", "sbr_t15", "sbr_t17"],
+    "minimum_clean_laps": 7,
+    "lico_variation_guidance": "Frozen P/A/B/P/B/A/P. A and B stagger the larger action across zones; neither is globally the stronger lap. Release fully at the beep, then brake normally. No intentional LICO on push laps or at T5/T16.",
+    "execution_quality_notes": "Retain every lap and annotate errors by lap, turn and phase. Do not replace a scheduled lap or alter the plan mid-run. Native DuckDB plus LICOR event and telemetry logs required.",
+    "notes": "Same Oreca LMP2; 55 L at pit departure, zero tyre wear, constant driver-controlled weather and unchanged setup. Seven cues per LICO lap, 28 expected. Calibration scored laps2/3, fixed held-out scored laps5/6; references from prior push run for transfer benchmark. No online adaptation."
+  }]
+}

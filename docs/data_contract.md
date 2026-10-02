@@ -1,5 +1,46 @@
 # LICOR Core Telemetry Schema
 
+## Continual local response replay (offline development)
+
+`analysis/continual_learning.py` observes one target at a time with immutable
+`LocalResponse` snapshots. Keep states separate by zone, target and explicit
+context (car/track/conditions/reference version). A changed context fails closed;
+the caller must initialize new state rather than carry an old correction across
+a refuel/setup/weather/reference change without review.
+
+The frozen global `ResponseFit` accepts action and acceleration. A local scale
+starts at 1 and is updated only after computing the old-state prediction for
+scoring. For accepted passage count n, clamp `(outcome / prior - scale)` to
+[-0.5,0.5], divide by `(2+n+1)`, limit the scale step to 0.1, then bound the
+new scale to [0.5,1.5]. These are fixed engineering guardrails, not tuned
+confidence bounds. Counts represent correlated passages, not independent proof.
+Negative targets remain in the evidence and scores; only update influence is
+bounded. Missing targets and rejected quality do not update. Zero action has
+zero predicted response but gives no dose-response evidence. Zero prior cannot
+be corrected multiplicatively and is explicitly marked `zero_prior`, not
+certified as an ineffective zone. Outside train-only marginal action or
+acceleration support, abstain rather than clip; support is not joint coverage.
+
+`scripts/replay_continual_learning.py` replays Sebring initial run then retry,
+numeric lap then physical zone order (never lexical run order). The existing
+tracked phase review must match every observation identity and quality tier.
+One common empirical tier gates both fuel and time. All 49 passages are retained;
+only the 12 `strict_retry` passages may update and enter the primary scores.
+Fit the frozen action-only comparison prior from the 171 finite paired,
+historically qualified non-Sebring rows; missing prior outcomes are not imputed.
+Acceleration remains recorded and support-gated; this simple baseline does not
+learn an acceleration interaction. The core supports the existing richer priors,
+but no candidate selection or future-outcome tuning happens in this replay.
+
+The executed dose is retrospective, even though response state is prequential.
+Planned dose remains distinct. Existing pre-reviewed geometry, retrospective
+quality annotations and five dedicated push references are not autonomous
+short-qualifying startup. Frozen versus local scores compare predictions of
+actually executed actions, not benefits of unexecuted adaptive plans. No live
+cues, budget accounting, descriptor refresh, exploration or new training labels
+are authorized by this output. Source hashes are checked and outputs must use a
+new directory. See `docs/continual_learning_replay_2026-10-01.md`.
+
 This document defines the normalized internal schema LICOR should use after
 reading raw LMU telemetry. Raw LMU channel names should be translated into these
 stable names before analysis.
@@ -1292,6 +1333,24 @@ its weaker independence and never alters the prospective frozen score.
 
 ### Acceleration at the proposed lift
 
+Sebring prospective two-dose validation freezes separate plan IDs A/B and an
+absolute `lap_number,plan_id` schedule; a multi-plan live file without a mapping
+is rejected. Only the mapped plan can sound, and push laps remain silent.
+Each event retains its plan ID. The seven non-overlapping outcome groups include
+the silent downstream corners T5/T16 in T3/T15; their costs must not be added
+again. Source references are prior push laps8–12, not the upcoming test outcomes.
+Scored laps2/3 calibrate, and laps5/6 remain the fixed local-budget test cohort.
+
+The Sebring approach grid samples acceleration directly every 5 m up to 500 m,
+without clipping to ratio 1.5. This is an offline capture audit, not authority for
+large lifts. `Throttle Pos Unfiltered` distinguishes the driver's full throttle
+from brief filtered throttle cuts (observed during a full-pedal approach).
+Filtered throttle and physical acceleration remain preserved; this does not
+change the historical detector or refit its data. All 35 push outcome starts
+are audited for filtered/unfiltered zero throttle before the pack is frozen.
+The audio lead compensation remains 0.35 s and must be checked against actual
+execution. Wider capture and newly frozen recovery boundaries remain distinct.
+
 The first transferable acceleration context is built from clean full-push laps,
 not from the LICO passage being predicted. For each physical braking event, the
 builder samples one-second approach windows ending `0.20 s` before points at
@@ -1318,3 +1377,119 @@ a lift near terminal speed. Ratios outside `[0, 1.5]` are clipped for the
 acceleration lookup and flagged as `clipped_low` or `clipped_high`; diagnostic
 model scores use only `in_range` rows. `observed_pre_lift_acceleration_mps2` remains an execution diagnostic:
 it is not silently substituted for the push counterfactual in static planning.
+
+### Compact four-circuit retrospective response benchmark
+
+Native race diagnostic captures follow `docs/native_race_capture_protocol.md`:
+5 Hz JSONL, raw native clocks and counters, unique vehicle-ID player matching,
+null HUD estimates, no inferred race horizon. These non-atomic raw snapshots
+require context segmentation and freshness checks before budget replay or ML.
+
+Offline HUD OCR in `scripts/audit_hud_ocr.py` is a separate diagnostic, not a
+new native source. Raw text, frame time/hash, numeric candidates, ambiguity and
+missingness are preserved. Frame35 is development; evaluations exclude it and
+count visible-frame exact/wrong/missing separately from correct-absent/false-
+positive controls. No OCR digit repair, carry-forward, future lookahead or
+implicit conversion of fractional total into remaining player laps. Ambiguous
+approximation markers produce unknown status. OCR syntax is not calibrated
+confidence. All outputs keep `live_authorized=false`; native logger HUD fields
+remain null. Display rounding and update latency remain properties of the HUD.
+
+`race_context.replay_race_context` consumes those snapshots chronologically,
+without consulting future rows. It separates formation, racing, clock expiry,
+leader finish, own finish, pit/garage, pause, caution and unavailable states.
+Only the player's native finish flag can yield zero remaining laps. Context
+history resets on inactive states, identity/clock/lap discontinuity, skipped
+player laps, >1s capture gaps/frozen scoring, or fuel increases >0.01L. These
+thresholds are diagnostic guards for the 5Hz capture, not calibrated bounds or
+proof of refueling. Ambiguous leader changes/skipped crossings clear leader pace.
+
+`licor_nominal_remaining_laps` is a boundary-only, constant-last-observed-pace
+forecast, distinct from raw `hud_total_laps`. It needs two observed crossings of
+each car in the active context; it does not borrow qualifying/prior-session laps.
+The prototype assumes the first leader crossing strictly after timer expiry,
+then counts player crossings at unchanged pace. An overdue leader crossing
+(last observed lap duration +1s) causes abstention, not invented missed laps.
+First observed scoring crossings retain sampling latency; no future-assisted
+interpolation is used. The forecast has no pit/traffic/incident model and does
+not certify a clean lap. `upper_remaining_laps` remains null until observed own
+finish, and `fuel_plan_authorized` is always false. Never substitute this point
+forecast for the fuel budget's required upper horizon. No raw HUD rounding.
+
+`leader_switch` adds a conditional sensitivity at eligible player boundaries.
+It concerns leader totals, never automatically player totals. The chosen pair
+brackets the leader crossing nearest timer expiry; the predicted next crossing
+is held fixed while the mean duration of subsequent complete laps varies.
+`short_crossing_minus_timer_s` is positive if that crossing occurs after expiry;
+`pace_minus_switch_s_per_lap` is positive when faster future full laps would
+reach the extra-lap threshold. Equality uses the explicit prototype convention
+of a crossing at expiry requiring another lap. `near_switch` uses a1s diagnostic
+tolerance, not a probability. With no full laps left, the pace threshold is null.
+The pair can change; it is a sensitivity comparison, not a persistent race plan.
+
+`race_scenarios.compare_fuel_scenarios` takes explicit adjacent positive counts
+of whole remaining **player** laps to finish or next refuel, current tank,
+frozen admissible plan menu, reserve and consumption allowance. Each budget
+sets nominal=upper to its own hypothesis; the longer branch is not asserted to
+bound every possible race. Both recommendations are returned without selecting
+a scenario by default. Infeasible branches retain deficits, not an executable
+recommendation. Predictions conditional on a supplied current plan assume it
+continues; unknown execution is null, never inferred from previous suggestions.
+No0.1L default,15-lap trigger, future-refill credit, training or live authority.
+The native replay does not yet automatically supply this comparator's player
+hypotheses, plan menu or qualified consumption inputs.
+
+The boundary-only `fuel_budget_replay` uses explicit completed/remaining lap
+counts; native HUD decimal totals and fuel-lap estimates are diagnostic fields,
+not converted source-of-truth integers. Its residual is observed full-lap fuel
+minus the frozen prediction for the actually executed plan. It requires a usable
+consecutive interval. No planned shadow action is assumed executed. The rolling
+positive residual envelope is not statistically calibrated or zone-causal.
+Confirmed finish clears further plans; refuel requires an explicit new context.
+
+Follow-up outputs in `four_circuit_harmonized_v1` preserve identities, outcomes
+and quality tiers; `acceleration_previous` records the prior method, while
+`acceleration_harmonized`/`acceleration` use the common ratio-profile method.
+`acceleration_planned_harmonized` is exported for Sebring only and must be used
+for planned-action decisions instead of executed-action context. Historical
+planned acceleration is explicitly unavailable in this compact export.
+
+The response candidate benchmark remains development-only. Positive quadratic
+coefficients ensure convexity at fixed acceleration, not global monotonicity
+along a varying-acceleration approach. Fuel overprediction diagnostics are
+not calibrated safety margins. Decision audits distinguish observed whole
+A/B plans from hypothetical mixtures of zone responses. They cannot certify
+race fuel sufficiency from seven outcome windows.
+
+The offline `fuel_budget` boundary calculator takes explicit whole remaining
+laps, upper lap bound, reserve, future formation burn and conservative push
+consumption. It credits only current tank fuel. Its target is finish or next
+refuel, never an implicit sum of future refills. Do not call mid-lap. Fuel
+feasibility precedes time minimization; unreachable is a first-class result.
+
+`scripts/qualify_sebring_phases.py` exports all 49 Sebring LICO passages with
+explicit quality tiers and phase annotations. `strict_retry` is a retrospective
+restricted sensitivity (12 passages), not a clean-driver or complete-recovery
+certificate. The other 37 observations remain `exploratory_only`. Recovery
+extensions use frozen geometry, stop before the next cue, and are never added
+to overlapping outcome totals. Phase-specific push medians are not additive.
+
+`scripts/evaluate_four_circuit_low_data.py` uses one historical destination-fold
+copy per observation and dedicated prior-push targets; it is not ML v2 dataset
+replacement. The locked Paul confirmation remains excluded. Whole circuits/runs
+are separated for response fitting. Action-only and acceleration-interaction
+models share finite paired coverage. Executed action and post-run qualification
+make these retrospective diagnostics, not prospective decision validation.
+
+Macro MAE equally weights four circuit-level MAEs, but fitting weights individual
+observations equally, not circuits equally. Export fit identities, coefficients,
+training ranges and test marginal-range exceedances. Range inclusion does not
+certify joint support. No preprocessing or tuning uses test outcomes.
+
+The original Sebring run alone supports provisional calibration budgets0/1/2:
+calibration laps2/3, fixed test laps5/6 for every budget. The retry never replaces
+this test. Local adaptation shrinks a non-negative slope toward a non-Sebring
+prior with a fixed penalty scaled by the first calibration planned action.
+Unlocalized initial errors and common-session references remain limitations.
+If new model choices are optimized against these scores, treat the scores as
+development evidence and require a newly frozen prospective confirmation.

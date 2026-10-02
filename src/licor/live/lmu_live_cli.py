@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 from pathlib import Path
 from typing import Sequence
 
@@ -94,6 +95,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             max_events=args.max_events,
             cue_lap_numbers=None if args.cue_laps is None else tuple(args.cue_laps),
             stop_after_lap_number=args.stop_after_lap,
+            lap_plan_schedule=(
+                _load_lap_plan_schedule(args.lap_plan_schedule)
+                if args.lap_plan_schedule is not None
+                else None
+            ),
         ),
     )
     print(f"Wrote {events.height} live cue events to {Path(args.event_log)}")
@@ -112,6 +118,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--bench-beep-only", action="store_true")
     parser.add_argument("--plan")
+    parser.add_argument(
+        "--lap-plan-schedule",
+        help="Frozen CSV mapping absolute lap_number to plan_id; unmapped laps stay silent.",
+    )
     parser.add_argument("--event-log")
     parser.add_argument("--accuracy-log")
     parser.add_argument(
@@ -144,6 +154,28 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--install-root")
     parser.add_argument("--settings-path")
     return parser
+
+
+def _load_lap_plan_schedule(path: str | Path) -> tuple[tuple[int, str], ...]:
+    with Path(path).open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        if not {"lap_number", "plan_id"}.issubset(reader.fieldnames or []):
+            raise ValueError(
+                "lap plan schedule requires lap_number and plan_id columns"
+            )
+        rows = []
+        for row in reader:
+            try:
+                lap_number = int(row["lap_number"])
+            except (TypeError, ValueError) as error:
+                raise ValueError(
+                    "lap plan schedule requires integer lap_number values"
+                ) from error
+            plan_id = row["plan_id"]
+            if not plan_id:
+                raise ValueError("lap plan schedule requires non-empty plan_id values")
+            rows.append((lap_number, plan_id))
+    return tuple(rows)
 
 
 def _environment_from_args(args: argparse.Namespace) -> LmuLiveEnvironment:

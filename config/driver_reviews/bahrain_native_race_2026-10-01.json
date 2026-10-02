@@ -1,0 +1,11 @@
+{
+  "session": "race_20261002_011124_945002",
+  "native_database": "Bahrain International Circuit_R_2026-10-02T01_11_27Z.duckdb",
+  "driver_statement": "oui plusieurs accidents et spins dans les 2 derniers tours",
+  "race_laps_affected": [5, 6],
+  "native_lap_intervals_affected": [4, 5],
+  "use": "Retain all laps for race-state and HUD diagnostics. No laps from this run promoted to ML training.",
+  "lap_5_6_push_reference_eligible": false,
+  "localized_zone_exclusions": null,
+  "reason_no_zone_exclusions": "Driver did not localize incidents; do not invent affected corners."
+}

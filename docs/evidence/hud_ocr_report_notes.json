@@ -1,0 +1,25 @@
+{
+  "audience": "product stakeholders",
+  "delivery": "mcp-app",
+  "question": "Can the two native LMU HUD estimates be read reliably from the existing OBS recording?",
+  "structure": ["title", "executive_summary", "metric_definitions", "findings_with_evidence", "approximation_marker_limit", "next_steps", "open_questions_and_caveats"],
+  "chart_contract": {
+    "family": "Comparison & Ranking",
+    "type": "bar",
+    "question": "How many visible evaluation frames yielded the exact numeric value for each target?",
+    "grain": "one row per target field, same-video V2 holdout",
+    "denominator": "14 visible frames per field; two absent controls excluded",
+    "fields": ["champ", "correct", "missing", "wrong", "visible", "absent_controls", "false_positive"],
+    "sufficiency": "Only two requested target fields exist; no artificial categories or temporal trend added.",
+    "scale": "zero-based count",
+    "palette": "single-root preferred, native renderer theme",
+    "non_color_encoding": "category axis labels and numeric scale",
+    "source": "docs/evidence/hud_ocr_score.sql"
+  },
+  "notebook_validation": "Code cells executed sequentially with Python; Jupyter/nbformat absent, no notebook engine installed.",
+  "source_integrity": "Original OBS video, old frames and annotations read-only. New generated folders refuse overwrite. No ML or native logger changes.",
+  "version_caveat": "V1 results preserved. Generator and parser hashes are recorded at audit time, not attested at capture time. V2 output generated with current v2 transform; only formatting/tests/docs changed after evaluation, no OCR rule tuning.",
+  "review": "Read-only explorer review confirmed scope isolation and split separation; flagged same-video correlation, permissive ignored liter prefix and limited absent controls. All are disclosed. Initial summary-counter test mismatch fixed;24 focused tests passed.",
+  "final_checks": "584 pytest tests passed in45.19s using a fresh workspace basetemp; default Windows temporary directory initially failed with112 permission-related fixture errors, resolved on rerun. Ruff check whole project passed; formatting checks passed for new Python scripts/tests; git diff --check passed. Notebook code cells executed sequentially without Jupyter.",
+  "render_qa": "Canonical artifact validated and rendered once as MCP report. Inspected its app accessibility tree: all narrative sections present, two bars labeled9/13 and zero-based axis0..16. No live connector, refresh automation or Sites publication."
+}

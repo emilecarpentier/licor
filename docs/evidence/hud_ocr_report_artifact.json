@@ -1,0 +1,138 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "title": "Lecture du HUD LMU : prototype hors ligne",
+    "sources": [
+      {
+        "id": "audit",
+        "label": "Audit OCR V2 — vidéo Bahrain du 1er octobre 2026",
+        "path": "data/processed/experimental/hud_ocr_v2/audit/rows.json",
+        "query": {
+          "sql": "WITH evidence AS (SELECT * FROM read_json_auto('data/processed/experimental/hud_ocr_v2/audit/rows.json') WHERE split = 'evaluation_same_video') SELECT 'Total de course' AS champ, count(*) FILTER (WHERE total_display_result = 'correct') AS correct, count(*) FILTER (WHERE total_display_result = 'missing') AS missing, count(*) FILTER (WHERE total_display_result = 'wrong') AS wrong, count(expected_total_display) AS visible, count(*) FILTER (WHERE expected_total_display IS NULL) AS absent_controls, count(*) FILTER (WHERE total_display_result = 'false_positive') AS false_positive, 'v2' AS reader, 'same_video_holdout' AS split FROM evidence UNION ALL SELECT 'Autonomie en tours', count(*) FILTER (WHERE fuel_laps_result = 'correct'), count(*) FILTER (WHERE fuel_laps_result = 'missing'), count(*) FILTER (WHERE fuel_laps_result = 'wrong'), count(expected_fuel_laps), count(*) FILTER (WHERE expected_fuel_laps IS NULL), count(*) FILTER (WHERE fuel_laps_result = 'false_positive'), 'v2', 'same_video_holdout' FROM evidence;",
+          "engine": "DuckDB",
+          "language": "sql",
+          "description": "Requête enregistrée dans docs/evidence/hud_ocr_score.sql. Le script audit_hud_ocr.py calcule les états par comparaison avec les annotations, cette requête recompte le résumé."
+        }
+      },
+      {
+        "id": "manual",
+        "label": "Annotations visuelles réservées V2",
+        "path": "docs/evidence/bahrain_hud_ocr_holdout_v2.json"
+      }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# Lecture du HUD LMU : prototype hors ligne"
+      },
+      {
+        "id": "summary",
+        "type": "markdown",
+        "sourceId": "audit",
+        "body": "## Executive Summary\n\n- **La lecture visuelle est possible, mais pas encore assez fiable pour piloter les recommandations.** Sur 14 images réservées où le HUD est visible, le prototype V2 lit correctement le total de course sur 9 images et l’autonomie sur 13.\n- **Les lectures douteuses restent absentes.** Aucune valeur numérique erronée n’a été acceptée dans cet échantillon; les deux images sans HUD sont rejetées. Ce petit échantillon ne prouve pas un taux d’erreur nul.\n- **Aucune nouvelle séance de conduite n’est nécessaire à ce stade.** Le lecteur reste isolé du pipeline live et du modèle ML."
+      },
+      {
+        "id": "definitions",
+        "type": "markdown",
+        "sourceId": "manual",
+        "body": "## Ce qui a été mesuré\n\nUne observation correspond à une image et un champ du HUD natif : total prévisionnel de course en haut à droite, ou autonomie en tours en bas à droite. Une lecture est correcte uniquement si elle correspond exactement à la valeur affichée, décimale comprise. Les deux images sans HUD sont des contrôles distincts, pas des lectures réussies incluses dans le dénominateur de 14.\n\nLe réglage s’appuie sur l’image à 35 secondes. Le second échantillon a été choisi avant extraction puis annoté visuellement avant consultation des résultats OCR. Il provient toutefois de la même vidéo et contient des images proches des précédentes : ce n’est pas une validation sur une nouvelle session."
+      },
+      {
+        "id": "finding",
+        "type": "markdown",
+        "sourceId": "audit",
+        "body": "## L’autonomie est plus lisible que le total de course\n\nLes barres comptent les lectures exactes sur les 14 images visibles du second échantillon. Le total reste absent sur 5 images, contre 1 pour l’autonomie. Les deux valeurs sont correctes simultanément sur 9 images. Le lecteur conserve le texte brut et n’insère pas de décimale, ne répare pas les chiffres et ne reconduit pas une ancienne valeur lorsque la nouvelle manque."
+      },
+      {
+        "id": "chart",
+        "type": "chart",
+        "chartId": "coverage"
+      },
+      {
+        "id": "symbol",
+        "type": "markdown",
+        "sourceId": "audit",
+        "body": "## Le symbole d’estimation reste une limite importante\n\nLe moteur confond souvent le symbole « ~ » avec un tiret ou un autre caractère. Le drapeau estimé/final reste donc inconnu sur 12 des 14 images visibles, même lorsque la valeur numérique est lisible. Il ne faut pas en déduire automatiquement un nombre entier de tours restant, ni traiter la disparition d’un symbole comme la confirmation d’arrivée.\n\nL’OCR lit seulement le nombre arrondi visible à l’écran. Il ne récupère pas les décimales internes de LMU et ne peut pas, à lui seul, garantir une arrivée à 0,1 L."
+      },
+      {
+        "id": "next",
+        "type": "markdown",
+        "body": "## Prochaine étape : fiabiliser hors ligne avant le mode observateur\n\n1. Stabiliser le traitement du symbole d’estimation et la reconnaissance de l’unité, puis figer une nouvelle version avant un autre échantillon réservé.\n2. Vérifier l’ordre temporel, l’âge des images et la synchronisation avec les passages de ligne. Une image absente ou périmée doit provoquer une abstention, pas un maintien silencieux.\n3. Tester ensuite un journal en mode observateur, sans influence sur les bips ni l’optimisation. La mise en service attend aussi la validation des totaux à deux ou trois chiffres et des autonomies proches de 1,0 tour."
+      },
+      {
+        "id": "limits",
+        "type": "markdown",
+        "body": "## Limites et questions ouvertes\n\nUne seule vidéo, une disposition HUD française et une résolution 1920 × 1080 ont été testées. Le moteur Windows ne fournit pas ici de confiance calibrée. Les deux contrôles sans HUD ne couvrent pas les menus, overlays, occultations et changements de caméra possibles. L’annotation est manuelle, sans seconde transcription humaine indépendante.\n\nReste à vérifier : variations de disposition, chiffres de courses longues, faibles autonomies, rythme réel de mise à jour du HUD et coût complet d’une acquisition écran en direct. Aucun résultat n’est utilisé pour entraîner les courbes LICO ou modifier la stratégie."
+      }
+    ],
+    "charts": [
+      {
+        "id": "coverage",
+        "title": "Lectures exactes par champ",
+        "description": "14 images avec HUD visible; les absences sont conservées comme échecs de lecture.",
+        "type": "bar",
+        "sourceId": "audit",
+        "encodings": {
+          "x": {
+            "field": "champ",
+            "type": "nominal"
+          },
+          "y": {
+            "field": "correct",
+            "type": "quantitative"
+          }
+        },
+        "options": {
+          "showLegend": false
+        },
+        "dataset": "coverage",
+        "source": {
+          "id": "audit",
+          "label": "Audit OCR V2 — vidéo Bahrain du 1er octobre 2026",
+          "path": "data/processed/experimental/hud_ocr_v2/audit/rows.json",
+          "query": {
+            "sql": "WITH evidence AS (SELECT * FROM read_json_auto('data/processed/experimental/hud_ocr_v2/audit/rows.json') WHERE split = 'evaluation_same_video') SELECT 'Total de course' AS champ, count(*) FILTER (WHERE total_display_result = 'correct') AS correct, count(*) FILTER (WHERE total_display_result = 'missing') AS missing, count(*) FILTER (WHERE total_display_result = 'wrong') AS wrong, count(expected_total_display) AS visible, count(*) FILTER (WHERE expected_total_display IS NULL) AS absent_controls, count(*) FILTER (WHERE total_display_result = 'false_positive') AS false_positive, 'v2' AS reader, 'same_video_holdout' AS split FROM evidence UNION ALL SELECT 'Autonomie en tours', count(*) FILTER (WHERE fuel_laps_result = 'correct'), count(*) FILTER (WHERE fuel_laps_result = 'missing'), count(*) FILTER (WHERE fuel_laps_result = 'wrong'), count(expected_fuel_laps), count(*) FILTER (WHERE expected_fuel_laps IS NULL), count(*) FILTER (WHERE fuel_laps_result = 'false_positive'), 'v2', 'same_video_holdout' FROM evidence;",
+            "engine": "DuckDB",
+            "language": "sql",
+            "description": "Requête enregistrée dans docs/evidence/hud_ocr_score.sql. Le script audit_hud_ocr.py calcule les états par comparaison avec les annotations, cette requête recompte le résumé."
+          }
+        }
+      }
+    ],
+    "cards": [],
+    "tables": []
+  },
+  "snapshot": {
+    "version": 1,
+    "status": "ready",
+    "datasets": {
+      "coverage": [
+        {
+          "champ": "Total de course",
+          "correct": 9,
+          "missing": 5,
+          "wrong": 0,
+          "visible": 14,
+          "absent_controls": 2,
+          "false_positive": 0,
+          "reader": "v2",
+          "split": "same_video_holdout"
+        },
+        {
+          "champ": "Autonomie en tours",
+          "correct": 13,
+          "missing": 1,
+          "wrong": 0,
+          "visible": 14,
+          "absent_controls": 2,
+          "false_positive": 0,
+          "reader": "v2",
+          "split": "same_video_holdout"
+        }
+      ]
+    }
+  },
+  "sources": []
+}

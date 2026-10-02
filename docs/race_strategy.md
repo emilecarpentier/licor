@@ -1,5 +1,19 @@
 # Race Strategy And Pit Stops
 
+## Current operational objective — 2026-09-12
+
+The driver confirmed a fuel-first short-qualifying-to-race use case. Fuel
+sufficiency to finish (or each explicitly planned refuel) is the constraint;
+time loss is minimized only among admissible fuel-feasible plans within the
+driver's chosen scenario. Parallel short/long hypotheses must expose the risk
+without silently enforcing the longer race. Reserve and consumption uncertainty
+remain separate, explicit inputs. No automatic 0.1L reserve or final-15-lap mode.
+See `docs/fuel_first_race_contract_2026-09-12.md`.
+The first pure offline budget calculator is `analysis/fuel_budget.py`; it does
+not connect the HUD, certify uncertainty margins, or enable adaptive live cues.
+Historical stop-count studies below remain separate, not an end-to-end race
+controller or a guarantee that future refills are reachable.
+
 LICOR's practical value comes from race-time optimization, not only lap-time or
 fuel-per-lap reporting. The project should estimate where and how much to
 lift-and-coast in order to improve the total race outcome.

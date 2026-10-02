@@ -1,0 +1,23 @@
+{
+  "video": "D:/OBS/2026-10-01 21-11-01.mp4",
+  "method": "Manual transcription of original-pixel contact sheet before inspecting v2 OCR output. Timestamps frozen before extraction. Frame35 is development, all other rows are same-video evaluation; 1s and802s are HUD-absent negative controls. No independent second human annotation.",
+  "rows": [
+    {"video_s":35,"context":"development_formation","lap_display":1,"total_display":6.4,"estimated":true,"fuel_laps":19.8},
+    {"video_s":1,"context":"hud_absent_before_driving","lap_display":null,"total_display":null,"estimated":null,"fuel_laps":null},
+    {"video_s":60,"context":"formation","lap_display":1,"total_display":6.4,"estimated":true,"fuel_laps":19.7},
+    {"video_s":180,"context":"race","lap_display":1,"total_display":6.4,"estimated":true,"fuel_laps":19.0},
+    {"video_s":240,"context":"race","lap_display":1,"total_display":6.4,"estimated":true,"fuel_laps":18.4},
+    {"video_s":248,"context":"crossing_update","lap_display":2,"total_display":6.4,"estimated":true,"fuel_laps":17.9},
+    {"video_s":300,"context":"race","lap_display":2,"total_display":6.4,"estimated":true,"fuel_laps":17.4},
+    {"video_s":355,"context":"crossing_update","lap_display":3,"total_display":6.4,"estimated":true,"fuel_laps":16.9},
+    {"video_s":410,"context":"race","lap_display":3,"total_display":6.5,"estimated":true,"fuel_laps":16.4},
+    {"video_s":500,"context":"race","lap_display":4,"total_display":6.5,"estimated":true,"fuel_laps":15.5},
+    {"video_s":600,"context":"race","lap_display":5,"total_display":6.5,"estimated":true,"fuel_laps":14.6},
+    {"video_s":700,"context":"race","lap_display":6,"total_display":6.5,"estimated":true,"fuel_laps":13.7},
+    {"video_s":740,"context":"clock_expired","lap_display":6,"total_display":5.9,"estimated":true,"fuel_laps":13.3},
+    {"video_s":760,"context":"clock_expired","lap_display":6,"total_display":5.9,"estimated":true,"fuel_laps":13.2},
+    {"video_s":780,"context":"leader_finished","lap_display":6,"total_display":6.0,"estimated":false,"fuel_laps":12.9},
+    {"video_s":798,"context":"own_finish","lap_display":6,"total_display":6.0,"estimated":false,"fuel_laps":12.7},
+    {"video_s":802,"context":"hud_absent_after_driving","lap_display":null,"total_display":null,"estimated":null,"fuel_laps":null}
+  ]
+}

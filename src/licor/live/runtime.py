@@ -29,6 +29,7 @@ class LiveStaticCueSessionConfig(LiveCueRunnerConfig):
     max_events: int | None = None
     cue_lap_numbers: tuple[int, ...] | None = None
     stop_after_lap_number: int | None = None
+    lap_plan_schedule: tuple[tuple[int, str], ...] | None = None
 
 
 class LiveTelemetrySampleSource(Protocol):
@@ -169,6 +170,7 @@ class _LiveCueRuntime:
     ) -> None:
         self._config = config
         self._cues = list(live_cue_plan.sort("cue_distance_m").iter_rows(named=True))
+        self._lap_plan_by_number = _validate_lap_plan_schedule(live_cue_plan, config)
         self._track_length_m = _track_length_m(live_cue_plan, config.track_length_m)
         self._triggered_by_lap: dict[int, set[tuple[str, str]]] = {}
         self._distance_anchor_by_lap: dict[int, LmuLiveTelemetrySample] = {}
@@ -213,6 +215,9 @@ class _LiveCueRuntime:
         events: list[dict[str, object]] = []
 
         for cue in self._cues:
+            scheduled_plan = self._lap_plan_by_number.get(sample.lap_number)
+            if scheduled_plan is not None and str(cue["plan_id"]) != scheduled_plan:
+                continue
             cue_key = (str(cue["plan_id"]), str(cue["zone_id"]))
             if cue_key in triggered_zones:
                 continue
@@ -307,11 +312,53 @@ def _cue_event_row(
         "sample_elapsed_s": sample.elapsed_s,
         "audio_cue_kind": config.audio_cue_kind,
         "cue_enabled": (
-            config.cue_lap_numbers is None
-            or sample.lap_number in config.cue_lap_numbers
+            (
+                config.cue_lap_numbers is None
+                or sample.lap_number in config.cue_lap_numbers
+            )
+            and (
+                config.lap_plan_schedule is None
+                or dict(config.lap_plan_schedule).get(sample.lap_number)
+                == str(cue["plan_id"])
+            )
         ),
         "notes": str(cue.get("notes") or ""),
     }
+
+
+def _validate_lap_plan_schedule(
+    plan: pl.DataFrame, config: LiveStaticCueSessionConfig
+) -> dict[int, str]:
+    plan_ids = set(plan["plan_id"].to_list())
+    schedule = config.lap_plan_schedule
+    if schedule is None:
+        if len(plan_ids) > 1:
+            raise ValueError(
+                "multiple live plans require an explicit lap plan schedule"
+            )
+        return {}
+    mapping: dict[int, str] = {}
+    for lap_number, plan_id in schedule:
+        if (
+            not isinstance(lap_number, int)
+            or isinstance(lap_number, bool)
+            or lap_number < 0
+        ):
+            raise ValueError("lap plan schedule requires non-negative integer laps")
+        if lap_number in mapping:
+            raise ValueError(f"duplicate lap in lap plan schedule: {lap_number}")
+        if plan_id not in plan_ids:
+            raise ValueError(f"unknown plan_id in lap plan schedule: {plan_id}")
+        mapping[lap_number] = plan_id
+    if not mapping:
+        raise ValueError("lap plan schedule must not be empty")
+    if config.cue_lap_numbers is not None:
+        missing = set(config.cue_lap_numbers) - set(mapping)
+        if missing:
+            raise ValueError(
+                f"enabled cue laps missing from lap plan schedule: {sorted(missing)}"
+            )
+    return mapping
 
 
 def _effective_lap_distance_m(

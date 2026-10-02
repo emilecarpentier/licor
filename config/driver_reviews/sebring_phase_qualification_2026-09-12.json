@@ -1,0 +1,409 @@
+{
+  "schema_version": 1,
+  "review_id": "sebring_phase_qualification_2026-09-12",
+  "review_source": "agent_native_phase_audit_and_prior_driver_notes",
+  "purpose": "benchmark_eligibility_not_driver_error_certification",
+  "policy": "First-attempt errors unresolved; strict sensitivity uses retry uncoupled T7/T10/T13/T15 only. No target-value residual filter. Frozen original metrics unchanged.",
+  "source_artifact_hashes": {
+    "annotations.csv": "197ed4239014975531595205695f3b93fc6c203e887e90f2c26ad4a9b8834a57",
+    "phase_outcomes.csv": "1ca345387eab91fe754256c94c8689476a1e75b3f0d397c4237a5ad843d97a1e",
+    "phase_scores.csv": "0598eb0dc7240e26dd265d038fbd273d567742b01bbdada854dc1f6027d90366",
+    "qualified_response_rows.csv": "b329ba0f05f49032892116e4a0240a1383cb6603b23b91b5a2660f9bb3c82e2c",
+    "recovery_outcomes.csv": "7bb20510d4afcd5f1588271ec51244943603dc9e15026c32713ade3eb4e8bc09",
+    "recovery_scores.csv": "849b871cb6980f5911db67a0d8ba18fdeb6811846ab5c0ae038d8f5bfc9a7727"
+  },
+  "annotations": [
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 2,
+      "zone_id": "sbr_t01",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 2,
+      "zone_id": "sbr_t03",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity|entry_driver_pedal_below_95",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 2,
+      "zone_id": "sbr_t07",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 2,
+      "zone_id": "sbr_t10",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 2,
+      "zone_id": "sbr_t13",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 2,
+      "zone_id": "sbr_t15",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 2,
+      "zone_id": "sbr_t17",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 3,
+      "zone_id": "sbr_t01",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 3,
+      "zone_id": "sbr_t03",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 3,
+      "zone_id": "sbr_t07",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 3,
+      "zone_id": "sbr_t10",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 3,
+      "zone_id": "sbr_t13",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 3,
+      "zone_id": "sbr_t15",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 3,
+      "zone_id": "sbr_t17",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 5,
+      "zone_id": "sbr_t01",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 5,
+      "zone_id": "sbr_t03",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 5,
+      "zone_id": "sbr_t07",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 5,
+      "zone_id": "sbr_t10",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 5,
+      "zone_id": "sbr_t13",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 5,
+      "zone_id": "sbr_t15",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 5,
+      "zone_id": "sbr_t17",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 6,
+      "zone_id": "sbr_t01",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 6,
+      "zone_id": "sbr_t03",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 6,
+      "zone_id": "sbr_t07",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 6,
+      "zone_id": "sbr_t10",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 6,
+      "zone_id": "sbr_t13",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 6,
+      "zone_id": "sbr_t15",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_lico_20260912_132042",
+      "lap_number": 6,
+      "zone_id": "sbr_t17",
+      "quality_tier": "exploratory_only",
+      "reasons": "unlocalized_driver_errors|structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 8,
+      "zone_id": "sbr_t01",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 8,
+      "zone_id": "sbr_t03",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 8,
+      "zone_id": "sbr_t07",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 8,
+      "zone_id": "sbr_t10",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 8,
+      "zone_id": "sbr_t13",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 8,
+      "zone_id": "sbr_t15",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 8,
+      "zone_id": "sbr_t17",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 9,
+      "zone_id": "sbr_t01",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 9,
+      "zone_id": "sbr_t03",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity|filtered_cut_not_driver_lift",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 9,
+      "zone_id": "sbr_t07",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 9,
+      "zone_id": "sbr_t10",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 9,
+      "zone_id": "sbr_t13",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 9,
+      "zone_id": "sbr_t15",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 9,
+      "zone_id": "sbr_t17",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 10,
+      "zone_id": "sbr_t01",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 10,
+      "zone_id": "sbr_t03",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity|entry_driver_pedal_below_95",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 10,
+      "zone_id": "sbr_t07",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 10,
+      "zone_id": "sbr_t10",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 10,
+      "zone_id": "sbr_t13",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 10,
+      "zone_id": "sbr_t15",
+      "quality_tier": "strict_retry",
+      "reasons": "",
+      "is_driver_error_confirmation": false
+    },
+    {
+      "run_id": "sebring_abab_20260912_134132",
+      "lap_number": 10,
+      "zone_id": "sbr_t17",
+      "quality_tier": "exploratory_only",
+      "reasons": "structural_carryover_sensitivity",
+      "is_driver_error_confirmation": false
+    }
+  ]
+}

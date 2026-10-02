@@ -4,7 +4,163 @@ Use this roadmap as the main handoff document for future Codex sessions. Start
 new work from the active priorities below, keep edits small, and update this
 file whenever the strategy changes meaningfully.
 
-## Active Priorities — 2026-09-11
+## Active Priorities — 2026-10-01
+
+Driver decision: **OCR is on hold, not discarded**. Preserve its scripts,
+annotations and generated evidence for an optional later return. Use verified
+native telemetry/session/scoring inputs for the active work; no screen capture
+dependency and no Streamlit UI changes. Here the intended input is understood
+as the telemetry stream, not a claim that Streamlit exposes extra game fields.
+
+Driver clarification: reliable continual learning during ordinary driving is
+the central capability. Cross-circuit transfer is the low-data starting point,
+not the end product. A poor qualifying observation must not permanently exclude
+a zone; unknown effectiveness is not observed ineffectiveness. Intentional live
+exploration has not been authorized. See the staged learning loop in
+`fuel_first_race_contract_2026-09-12.md`.
+
+Refocused next milestone: an offline **short push qualification -> initial
+cross-circuit plan -> sequential local learning** acceptance test. The simple transfer baseline and
+response candidates already exist; do not restart those comparisons or require
+another general collection campaign. Hold the destination circuit out of fitting,
+use only its first usable push references (minimum three for current descriptors),
+and exclude all destination LICO outcomes from the initial plan. Audit readiness,
+available zones, physical action support, acceleration at the proposed lift,
+predicted fuel/time and time-to-plan. Missing references must produce limited
+coverage or abstention, not invented qualifying laps or extrapolated large lifts.
+Also audit zone definitions, recovery windows and dose caps for destination
+leakage: rebuild them from the push-only information available at startup, or
+label the test explicitly as using pre-reviewed geometry. Excluding the circuit
+from coefficient fitting alone does not establish autonomous unseen-track startup.
+
+As the core acceptance test, evaluate chronological, bounded local updates only from prior qualified
+executions, against the frozen transfer baseline. Score the fuel target and
+decision quality, not only prediction MAE. Preserve the distinction between
+observed whole plans and unexecuted mixed-zone counterfactuals. Zone-window fuel
+savings are not automatically whole-lap savings; the budget bridge needs its own
+validation. The first bounded predict-before-update response replay is now
+implemented in `analysis/continual_learning.py` and
+`scripts/replay_continual_learning.py`; it does not yet generate or execute a
+revised plan. It preserves all 49 Sebring observations but learns only from the
+12 existing `strict_retry` passages. Geometry and quality masks are retrospective,
+and initial references are five dedicated push laps, not a short-qualification
+startup test. See `docs/continual_learning_replay_2026-10-01.md` for the exact
+scope, checks and development results. The end-to-end milestone remains open.
+Freeze the candidate and protocol before a fresh circuit validation (Imola remains
+an option; no circuit choice or simulator run is required now).
+
+The completed race test supports native fuel accounting, session segmentation,
+leader/player finish conventions and horizon diagnostics. It did **not** validate
+zero-shot LICO on a new circuit or automatically add clean ML training rows.
+The existing budget/scenario modules remain reusable supporting components;
+native-only horizon/scenario integration is a separate gate, not a reason to
+block cross-circuit model work on recovering the HUD.
+
+### Completed evidence retained
+
+Offline HUD OCR feasibility audit completed on the existing OBS video. Windows
+OCR needs no new dependency. Frozen V2 reads exact race totals on9/14 visible
+same-video evaluation frames and fuel autonomy on13/14; both on9/14, with no
+wrong numeric candidates observed. Two HUD-absent controls abstain. Approximate
+versus final status remains unknown on12/14 visible frames. This small correlated
+sample is not a live reliability certificate. See `scripts/read_hud_frames.ps1`,
+`scripts/audit_hud_ocr.py`, `notebooks/hud_ocr_feasibility.ipynb`, and the OCR
+section of `docs/native_race_capture_protocol.md`. No live ingestion or ML change.
+
+Native race capture completed and reconciled: Bahrain, six race laps, own finish
+confirmed separately from leader finish (~19.69s earlier) and clock zero
+(~64.67s earlier). See `notebooks/bahrain_native_race_audit.ipynb`,
+`scripts/audit_bahrain_native_race.py`, and `docs/evidence/bahrain_race_hud_2026-10-01.json`.
+Driver confirms accidents/spins on final two race laps; diagnostics only,
+no training/refit. Offline race-context segmentation and a causal, constant-past-
+pace boundary forecast are now implemented in `src/licor/analysis/race_context.py`
+and `scripts/replay_native_race_context.py`. Bahrain replay distinguishes clock
+expiry, leader finish, own finish and garage reset. It predicts 4/3/2/1 laps
+remaining at completed laps2/3/4/5, but this is a diagnostic point forecast,
+not a validated upper horizon or native HUD reconstruction.
+HUD ~6.5 can fall to ~5.9 after clock zero before a six-lap finish: do not apply
+an unconditional floor/ceil conversion. No live adaptive authority.
+
+Exact HUD availability checked against the actual capture, DuckDB inventory and
+installed SDK: 0/3899 `hud_total_laps` values present. `mEstimatedLapTime` is lap
+duration for gap calculations; `mMaxLaps` is a configured cap (2147483647 here),
+neither is the fractional total. No verified alternative WebUI route yet; do not
+claim impossibility across all LMU interfaces.
+
+Driver clarification supersedes automatically imposing a long horizon:
+`analysis/race_scenarios.py` now compares two explicit adjacent player-lap fuel
+budgets independently, preserving reserve and consumption allowance. No global
+plan is selected without the driver's scenario choice. Target0.1L is a possible
+late-race driver risk decision, not a default reserve or automatic15-lap switch.
+Ignoring cues must not be learned as if the recommended action was executed.
+Long races remain stint-feasible: no future refill credit before reaching it.
+
+The native context replay now exports `leader_switch` at eligible boundaries:
+adjacent leader totals around the nearest timer crossing and required mean pace
+change over subsequent full laps, holding the next crossing fixed. Not HUD,
+not probability, and not an automatic leader-to-player lap mapping. Original
+`upper_remaining_laps` remains null until own finish; original conservative
+controller remains abstaining. The separate fixed-branch comparator does not
+claim a calibrated bound. No live adaptive authority or model refit.
+
+OCR gate deferred by the driver: no further reader tuning or live capture work
+without revisiting this choice. The local REST schema and official broadcast
+WebSocket have now been inspected with LMU running; neither inspected payload
+provided the two exact HUD estimates. This does not prove absence from every
+LMU interface. No new driving run is needed for the next offline work.
+
+### Prior handoff — 2026-09-12
+
+Current handoff: read-only native race logger and bounded PowerShell launcher
+are ready for an in-game diagnostic session. Follow
+`docs/native_race_capture_protocol.md` on a familiar circuit. This supersedes
+the older "no simulator run required" and Sebring collection instructions below.
+No new LICO collection, exact HUD ingestion or live adaptation is enabled.
+
+Latest: native LMU HUD identified; boundary-only causal fuel replay implemented
+and tested on explicit synthetic scenarios. See
+`docs/fuel_budget_shadow_replay_2026-09-12.md`. Next is read-only synchronized
+session/player/leader logging and HUD convention verification, then short-qual
+startup validation. No inferred conversion of the HUD fractional total, no
+calibrated race guarantee and no live adaptive authority.
+
+Fuel-first clarification: short qualifying on a new circuit -> initial prior
+plan -> remaining-fuel/remaining-distance budget -> causal adaptation. See
+`docs/fuel_first_race_contract_2026-09-12.md`. Fuel sufficiency is a constraint,
+not a freely traded objective. A pure boundary-only budget calculator now
+exists; HUD ingestion, race-context adaptation and calibrated safety margins
+are not yet live features. No additional simulator run is required immediately.
+
+Completed this lot: harmonized four-circuit acceleration, four response-model
+forms, and planned-action fuel-first decision audit. See
+`docs/fuel_first_development_review_2026-09-12.md`. Next: conservative margins
+and chronological budget/adaptation replay, then a frozen short-qualifying
+validation on a fresh circuit. Current point predictions do not guarantee fuel
+sufficiency and the best time-cost form is not promoted to production.
+
+Current decision: Sebring phase qualification and the compact four-circuit
+low-data benchmark are complete. See
+`docs/four_circuit_low_data_review_2026-09-12.md`. Fuel transfer is encouraging;
+time-cost prediction and prospective decision quality remain the main gates.
+Next: offline conservative adaptation, harmonized push-acceleration features,
+and decision-level evaluation before a frozen new validation. No immediate
+additional simulator run or live-model promotion. The operational updates below
+are retained as history, not outstanding collection instructions.
+
+Latest operational update (2026-09-12): the first Sebring LICO attempt was
+interrupted during its final push lap (T1 error), with imperfect LICO execution
+reported. Preserve it for localized review. Next collection is the separate
+four-lap frozen A/B/A/B retry described in
+[the retry run sheet](sebring_abab_retry_run_sheet.md). No dose changes or refit;
+this familiarisation/repeat session does not replace the original held-out
+schedule and contains no same-session scored push control.
+
+Subsequent update: retry completed three scored laps A/B/A. Combined native
+analysis now covers four A and three B laps across both attempts; see
+`docs/sebring_combined_analysis_2026-09-12.md`. Existing-trace phase and
+carryover qualification and low-data four-circuit evaluation are now complete.
+Initial unresolved errors remain flagged; the
+retry does not replace the original held-out cohort.
 
 The [September restart plan](restart_plan_2026-09.md) is the current execution
 plan. It supersedes the historical sequencing below. Historical completion
@@ -27,9 +183,18 @@ marks describe implemented artifacts, not proof of predictive performance.
 Circuit selection now has a driver-repeatability gate: clean-lap and brake/lift
 repeatability are double-weighted against physical zone diversity. Bahrain is
 selected as circuit C for its reported driver repeatability and clear
-long-straight/heavy-braking LICO opportunities. Imola, COTA, Sebring and
-Interlagos remain candidates for circuit D; reject any circuit below 3/5 for
-repeatability.
+long-straight/heavy-braking LICO opportunities. On 2026-09-12 the driver selected
+Sebring as circuit D for expected repeatability. Imola is an optional later test;
+COTA is deferred because consistency, particularly in sector 3, is a concern.
+The ready push-only launcher is documented in `docs/circuit_d_push_protocol.md`.
+
+Sebring push run `sebring_push_20260912_114122` is now recorded and reviewed:
+native laps 8–12 pass basic intake, and the driver reports no notable errors.
+Use `config/datasets/sebring_lmp2_circuit_d_reviewed_2026-09-12.json`; the original
+empty sidecar stays frozen with the collection pack. The seven-zone two-dose
+pack is prepared: next is the simulator P/A/B/P/B/A/P block, not more push
+collection. See `docs/sebring_lico_validation_run_sheet.md` for the launcher.
+See `docs/sebring_push_intake_2026-09-12.md` for evidence and pending zone gates.
 
 The Bahrain circuit-C push protocol is frozen in
 `config/collection_protocols/bahrain_lmp2_circuit_c_v1.json`. Its first native
@@ -586,12 +751,18 @@ Current interpretation:
 ## Recommended Next Codex Task
 
 ```text
-Use the corrected Bahrain score and three-circuit benchmark in
-docs/bahrain_transfer_review_2026-09-11.md. Select circuit D using the driver's
-repeatability assessment, collect five push laps, audit wide upstream capture
-and recovery boundaries, then freeze a seven-lap P/A/B/P/B/A/P validation with
-two conservative action doses per selected zone. Larger lifts require a
-separate response-support gate; a wide capture envelope is not a live cue.
-Compare fixed held-out laps at local calibration budgets 0,1,2 and retain an
-independent later run/circuit for confirming the claimed adaptation speed.
+OCR is parked; preserve its evidence and do not resume screen capture work.
+Start from the completed four-circuit and fuel-first development reviews.
+Continue from the bounded Sebring response replay (do not rebuild it).
+Build the offline short-qualification-to-initial-plan acceptance test using
+native push data only at startup, destination-circuit-held-out coefficient fits,
+and provenance checks for geometry, windows, caps and planned-lift acceleration.
+Measure end-to-end readiness and compute time; abstain on insufficient coverage.
+Then bridge the already bounded local response updates to a shadow-only next-plan
+calculation. Retain the frozen transfer baseline and distinguish observed plans
+from hypothetical recombinations. Validate the zone-to-whole-lap fuel bridge
+separately; zone response accuracy alone cannot prove race feasibility.
+Do not repeat the completed Sebring collection or claim the recent race is a
+new ML transfer validation. Freeze the candidate and protocol before requesting
+a fresh circuit run. No simulator session or Streamlit UI change is needed now.
 ```

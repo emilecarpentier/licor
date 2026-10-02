@@ -1,5 +1,162 @@
 # Dataset Log
 
+## Continual Sebring replay — 2026-10-01 (Toronto)
+
+No new collection, labels, geometry or production curve refit. Generated
+`experimental/continual_sebring_replay_v1/` from the hash-verified harmonized
+223-row table and existing tracked phase review. Frozen prior uses 171 finite
+paired observations from Spa/Paul/Bahrain, excluding all Sebring outcomes.
+All 49 Sebring passages remain in the chronological log (98 target events).
+Only 12 restricted `strict_retry` observations update each target; the other
+37 cannot update, including one out-of-action-support abstention. Scores are
+predict-before-update, development-only, not a new prospective confirmation.
+Fixed/local fuel MAE: 7.958/7.263 mL per eligible zone passage; time MAE:
+0.07400/0.07130 s. After the first local observation, eight passages have fuel
+MAE 10.196/9.154 mL. See `continual_learning_replay_2026-10-01.md` for provenance,
+limitations, nonuniform effects and reproduction. No live cue/ML authority.
+
+## Native race/HUD audit — 2026-10-01 (Toronto)
+
+Offline OCR follow-up uses the same OBS video only; no new driving data or ML
+rows. `hud_ocr_v1/` preserves frame35 development attempts and frozen14-frame
+evaluation (total3/14, autonomy8/14 exact, others missing). V2 rearranges actual
+label/value pixels, not digits, and uses a separate preselected14-visible-frame
+sample plus2 HUD-absent controls. Results: total9/14, autonomy13/14 exact, both9/14;
+no wrong numeric candidates, both absent controls rejected. The estimate/final
+flag is missing on12/14. Reference `docs/evidence/bahrain_hud_ocr_holdout_v2.json`
+was transcribed from original-pixel crops before inspecting V2 OCR results.
+The split is same-video only: close neighbors248/355 are strongly correlated
+with earlier reviewed frames. No second independent annotator, low-fuel test,
+multi-digit race-total test, live authority, source modification or refit.
+
+Follow-up risk-choice implementation: `analysis/race_scenarios.py` adds pure
+conditional short/long player fuel budgets and separate leader pace-switch
+sensitivity. New scenario tests use synthetic numbers only (not recommendations
+or model evidence). `bahrain_native_context_two_scenarios_v1/` replays the same
+3899 source rows with added leader sensitivity; it does not invent a fuel-plan
+menu, reserve, qualifying baseline or executed actions for this race. No refit,
+training inclusion, source mutation or live change. The previous `_checked`
+output remains the historical context-only version.
+
+Race source remains read-only in LMU Telemetry:
+`Bahrain International Circuit_R_2026-10-02T01_11_27Z.duckdb`.
+Matched capture `race_20261002_011124_945002`: 3899 rows, finalized Ctrl+C,
+six race laps and own finish present. Video `D:/OBS/2026-10-01 21-11-01.mp4`
+has manually reviewed HUD frames under the separate generated audit folder.
+Earlier capture `race_20261002_010905_769963` contains148 rows but an unfinalized
+manifest; preserved and excluded, not merged into this race.
+
+Read-only reconciliation: 3793 paired fuel samples, maximum absolute difference
+0.00372L; interpolated tank at finish36.58588L, formation/pre-green1.10931L,
+race17.30481L. No in-race pit event. Garage fuel resets excluded.
+Raw Lap0 contains formation plus race lap1; native1–5 map to race2–6.
+Driver review confirms accidents/spins race5–6 (native4–5), not localized.
+All data remain diagnostic-only, no dataset sidecar/model refit. The HUD's
+fractional total and fuel autonomy are manual evidence, not new API fields.
+
+Follow-up software replay: `scripts/replay_native_race_context.py`, generated
+`bahrain_native_context_v1_checked/`, same 3899-row source SHA256. Explicit
+context states and causal last-observed-pace forecasts only; no new telemetry,
+training labels, clean-lap qualification, model fit or cue authority. Null HUD
+confirmed on every input row. Forecast output is exploratory, not model-ready
+or a conservative fuel horizon. Earlier `bahrain_native_context_v1/` is retained
+as the initial pre-review diagnostic; use the `_checked` output for this version.
+
+## Boundary fuel replay — 2026-09-12
+
+No new empirical telemetry or model refit. `fuel_budget_shadow_scenarios_v1`
+contains seven synthetic software scenarios (16 boundaries), not race evidence.
+Native HUD identity confirmed by driver. Raw HUD estimates remain diagnostics,
+not inferred integer horizons. Prior circuit outputs and frozen packs untouched.
+
+## Fuel-first development — 2026-09-12
+
+No new telemetry collected. `four_circuit_harmonized_v1` preserves all223
+canonical rows/targets/quality, harmonizing49 Sebring acceleration values from
+existing push8–12 ratio profiles. Planned-dose acceleration is separate.
+`four_circuit_response_candidates_v2` evaluates four forms on paired183 strict
+or220 sensitivity rows, whole-circuit held out. These are development scores.
+`sebring_fuel_first_decisions_v2_final` selects plans before joining initial
+test5/6 outcomes; no retry replacement, no local response fit, no live change.
+Mixed-zone recombinations are hypothetical, not executed race plans. See
+`docs/fuel_first_development_review_2026-09-12.md`.
+
+## Sebring phase qualification and compact four-circuit benchmark — 2026-09-12
+
+All 49 LICO zone passages retained: 12 conservative retry passages and 37
+exploratory passages. Annotations live in
+`config/driver_reviews/sebring_phase_qualification_2026-09-12.json`; this is a
+retrospective model-qualification mask, not confirmed driver-error labeling.
+Native phase/recovery outputs are in `phase_qualification_v1` under the Sebring
+transfer directory. T17 recovery has 6/7 coverage; retry lap10 lacks the required
+next-lap100m. No extrapolation or automatic deletion of initial-attempt data.
+
+`four_circuit_low_data_v1` contains a canonical historical table plus Sebring,
+whole-circuit-held-out fits, paired model scores, all-pass sensitivity, and fixed
+original-run calibration2/3 -> test5/6 adaptation diagnostics. Strict macro MAE
+is 0.007817 L / 0.072528 s for action-only. No production ML-table replacement
+or live promotion. See `docs/four_circuit_low_data_review_2026-09-12.md`.
+
+## Sebring combined LICO review — 2026-09-12
+
+Both attempts are analyzed together: initial A2/6 and B3/5 plus retry A8/10
+and B9, totaling four A, three B and 49 audible cues. Partial push7 and B11 are
+not complete scored laps. Final artifacts are in `combined_lico_analysis_final`
+under the Sebring transfer directory. Prior five push and initial push1/4 are
+separate reference scenarios. Descriptive median contrasts are 0.259686 L / +0.56 s
+and 0.241575 L / +0.66 s respectively (fuel100–5800 m, time whole lap).
+First-attempt driving errors remain unresolved; T1 push4 impact and T3 entry
+pedal flags are preserved. No refit or model-ready promotion. See
+`docs/sebring_combined_analysis_2026-09-12.md` for evidence and the next gate.
+
+## Sebring partial first LICO attempt and ABAB retry — 2026-09-12
+
+Run `sebring_lico_20260912_132042` was stopped during its final scheduled push
+lap after a T1 error. The driver reports imperfect execution on some LICO
+corners; no blanket clean label is assigned. Preserve all existing session
+files and the native recording. Notes are retained in
+`config/driver_reviews/sebring_first_lico_attempt_2026-09-12.json`; native
+telemetry intake and localized lap-zone review remain pending.
+
+The separate `lico_abab_retry_pack_v1` repeats the same frozen cue plan in
+four scored laps A/B/A/B (28 beeps), with no scored push lap. It is a repeat
+execution/familiarisation session, not a replacement for the original
+predeclared calibration/test schedule. Prior push references require
+session, fuel-load and driver-learning caveats. No model refit, zone-boundary
+change or post-hoc evaluation split is authorized by this retry.
+Instructions: `docs/sebring_abab_retry_run_sheet.md`.
+
+## Sebring first push intake — 2026-09-12
+
+### Prospective pack frozen after push review
+
+`data/processed/experimental/sebring_lmp2_transfer_2026_09/lico_validation_pack_v1`
+is ready for the first local LICO session. Two static plan IDs execute
+P/A/B/P/B/A/P on seven approaches (28 audible cues expected). T5/T16 remain
+silent and are included in the downstream outcome groups of T3/T15. No local
+LICO observation has been added or refit. Prior push references are native
+laps8–12; future calibration is scored laps2/3 and the fixed test is laps5/6.
+All35 frozen outcome starts have nonzero filtered and driver throttle. Sensor
+correlation is at least0.974 across the five laps. Direct acceleration values
+at proposed lifts and wide upstream capture are saved separately from actions.
+Synthetic and recorded-push replay checks both emit28 recorded cues, no system
+audio; replay cues are all on time. Suite343 tests plus the added launcher
+regression pass, Ruff clean, PowerShell AST valid. Interruption cannot be
+announced as completion without a logged crossing beyond the seventh lap.
+Only the simulator can validate actual audio/heard count and driver execution.
+Instructions: `docs/sebring_lico_validation_run_sheet.md`.
+
+Run `sebring_push_20260912_114122`, native source
+`data/Sebring International Raceway_P_2026-09-12T15_41_46Z.duckdb` copied with
+matching SHA-256; original retained. Driver reports no notable errors. Retain
+native laps8–12; exclude partial pit outlap7. Lap13 has no closing event.
+Reviewed sidecar: `config/datasets/sebring_lmp2_circuit_d_reviewed_2026-09-12.json`.
+Five complete push laps pass core channel coverage; nine repeated main braking
+landmarks are exploratory. Three coast flags fall within preceding braking and
+are not intentional LICO actions. Zone-start and recovery checks remain pending.
+No model refit or live cue authorization. Full record and reproduction:
+`docs/sebring_push_intake_2026-09-12.md`.
+
 This file documents local telemetry datasets used during LICOR development.
 Raw `.duckdb` files stay outside Git. This log keeps the labels, valid laps, and
 driver notes needed to reproduce analyses.

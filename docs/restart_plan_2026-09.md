@@ -281,6 +281,16 @@ offline checks, followed by a bounded prospective driving comparison. Driver
 and setup adaptation require their own held-out groups. Dashboard polish follows
 the validated recommendation loop.
 
+## Circuit D selection — 2026-09-12
+
+The driver selected Sebring for the next prospective test. Five push laps8–12
+are now reviewed. The prepared two-dose seven-zone validation is documented in
+`docs/sebring_lico_validation_run_sheet.md`; the next step is the simulator run.
+Imola remains optional. COTA is deferred because driver variation in its
+technical third sector could obscure model errors. The original empty sidecar
+remains frozen with its push collection pack; the reviewed sidecar carries the
+new run. No Sebring LICO response has been observed or used in training.
+
 ## Working discipline
 
 Each slice has a reproducible command, provenance, a focused check and a short

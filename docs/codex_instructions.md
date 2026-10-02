@@ -2,10 +2,36 @@
 
 ## Project Direction
 
+Driver decision: put OCR on hold while preserving the prototype and evidence.
+Do not make screen reading a prerequisite for LICOR or resume it automatically.
+Active input scope is verified native telemetry/session/scoring data; no Streamlit
+UI change is requested. Refocus on the offline short-qualification-to-plan gate
+in `roadmap.md`, then freeze a candidate before a new-circuit driving test.
+The recent race is integration/context evidence, not a fresh ML transfer test.
+Continual local learning during normal driving is the core product requirement;
+multi-circuit transfer reduces startup data needs. Evaluate them together.
+Keep unknown zones distinct from ineffective ones and assess quality locally.
+Intentional exploration in a race is proposed only, not authorized by this goal.
+The first bounded local-response replay is implemented; see
+`docs/continual_learning_replay_2026-10-01.md`. Continue toward push-only startup
+and a shadow next-plan bridge, not another rebuild of the same replay. The
+current action-only adaptation baseline does not replace the acceleration-aware
+physical planning requirement or identify never-observed LICO responses.
+
 For current sequencing and validation gates, follow
 `docs/restart_plan_2026-09.md` and the active section of `docs/roadmap.md`.
-Paul Ricard static pilot preparation comes next. Adaptive decisions are replayed
-after the run, using only information available at each decision time.
+The four-circuit compact retrospective benchmark is complete; follow
+`docs/four_circuit_low_data_review_2026-09-12.md` for current offline-model gates.
+Adaptive decisions are replayed using only information available at each
+decision time. Do not promote a retrospective response fit into live authority.
+The user's target is fuel sufficiency first, then minimum time loss, starting
+from short qualifying on a new circuit and adapting to the remaining distance.
+Follow `docs/fuel_first_race_contract_2026-09-12.md`; never promise arrival from
+a point prediction or count fuel from an unreachable future refueling stop.
+Compare short/long race hypotheses without forcing the longer one. Fuel-first
+applies within the driver's selected scenario. The driver may ignore late-race
+cues: use actual tank measurements, do not assume recommendations were executed,
+and do not automatically lower the reserve to0.1L or at15 laps remaining.
 
 LICOR is currently an offline telemetry analysis project moving toward a
 validated recommendation loop. Prioritize reliable offline modeling and reports,

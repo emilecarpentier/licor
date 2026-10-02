@@ -1,0 +1,28 @@
+{
+  "dataset_id": "sebring_lmp2_circuit_d_2026-09",
+  "description": "Reviewed first Sebring push run; no local LICO outcomes or response fitting. Original collection placeholder stays frozen with its launch pack.",
+  "lap_distance_range_m": [5800, 5900],
+  "runs": [
+    {
+      "run_id": "sebring_push_20260912_114122",
+      "file": "data/Sebring International Raceway_P_2026-09-12T15_41_46Z.duckdb",
+      "track": "Sebring International Raceway",
+      "car_class": "LMP2_ELMS",
+      "car": "Oreca 07 ELMS Custom Team 2025 #397",
+      "session_type": "Practice",
+      "run_type": "push_baseline",
+      "collection_label": "none",
+      "labels_quality": "driver_reviewed",
+      "valid_laps": [8, 9, 10, 11, 12],
+      "borderline_laps": [],
+      "context_laps": [],
+      "excluded_laps": [7],
+      "collection_protocol_id": "sebring_lmp2_circuit_d_v1",
+      "collection_session_id": "baseline_push_01",
+      "collection_design": "baseline",
+      "target_zones": [],
+      "execution_quality": "clean",
+      "driver_notes": "Driver confirmed no notable errors on 2026-09-12. Native laps 8-12 complete, lap7 partial outlap in pits; lap13 only begins. Three detector flags on laps8/10/11 begin inside earlier braking and are not intentional LICO training actions. No frozen zones yet: zone_start_zero_throttle and phase-specific reference eligibility remain pending."
+    }
+  ]
+}

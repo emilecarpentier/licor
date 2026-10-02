@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "protocol_id": "sebring_abab_retry_v1",
+  "dataset_id": "sebring_lmp2_circuit_d_2026-09",
+  "track_name": "Sebring International Raceway",
+  "car_class": "LMP2_ELMS",
+  "purpose": "Repeat execution and driver familiarisation after an imperfect first attempt; unchanged frozen A/B doses, no refit and no replacement of the original held-out schedule.",
+  "required_run_metadata": ["collection_protocol_id", "collection_session_id", "collection_design", "target_zones", "execution_quality", "labels_quality", "driver_notes"],
+  "sessions": [{
+    "session_id": "abab_retry_01",
+    "collection_design": "recommendation_execution",
+    "objective": "Repeat A/B/A/B across four scored LICO laps, with no scored push controls.",
+    "target_zones": ["sbr_t01", "sbr_t03", "sbr_t07", "sbr_t10", "sbr_t13", "sbr_t15", "sbr_t17"],
+    "minimum_clean_laps": 4,
+    "lico_variation_guidance": "Frozen A/B/A/B, seven cues per lap, 28 total. Fully release at the beep and adapt braking to actual speed. A and B stagger the larger dose across zones.",
+    "execution_quality_notes": "Preserve all laps and annotate errors by lap, turn and phase. Do not assume four clean laps from completion alone. Native DuckDB and LICOR logs required. Keep the interrupted first attempt separate.",
+    "notes": "Same LMP2, 55 L at departure, zero tyre wear and constant driver-controlled weather. Silent outlap; cross start/finish after the fourth scored lap. Prior push comparisons require session, fuel-load and driver-learning caveats. No new held-out split declared by this protocol."
+  }]
+}

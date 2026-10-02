@@ -230,6 +230,12 @@ class LMUSharedMemoryReader:
             return None
         return self.read_player_sample()
 
+    def read_race_snapshot(self) -> dict[str, object]:
+        """Diagnostic snapshot only; does not supply a HUD horizon or cue."""
+        from licor.live.race_capture import extract_race_snapshot
+
+        return extract_race_snapshot(self._copy_layout())
+
     def _copy_layout(self) -> "SharedMemoryLayout":
         layout = SharedMemoryLayout()
         ctypes.memmove(

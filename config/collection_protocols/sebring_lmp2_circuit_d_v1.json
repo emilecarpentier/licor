@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "protocol_id": "sebring_lmp2_circuit_d_v1",
+  "dataset_id": "sebring_lmp2_circuit_d_2026-09",
+  "track_name": "Sebring International Raceway",
+  "car_class": "LMP2_ELMS",
+  "purpose": "Collect the clean full-push calibration required to describe circuit D before any Sebring LICO outcome is observed or any zero-LICO-shot prediction is frozen.",
+  "required_run_metadata": [
+    "collection_protocol_id",
+    "collection_session_id",
+    "collection_design",
+    "target_zones",
+    "execution_quality",
+    "labels_quality",
+    "driver_notes"
+  ],
+  "sessions": [
+    {
+      "session_id": "baseline_push_01",
+      "collection_design": "baseline",
+      "objective": "Obtain five clean consecutive full-push laps for Sebring braking, approach-speed, acceleration and local fuel/time references.",
+      "target_zones": [],
+      "minimum_clean_laps": 5,
+      "lico_variation_guidance": "No intentional LICO, lift-and-coast or fuel-saving action. Normal throttle modulation required to drive corners is not LICO.",
+      "execution_quality_notes": "Retain every recorded lap. Mark impacts, off-tracks, missed braking points, spins, traffic-like interruptions and abnormal slowdowns by lap and corner; use zone-level exclusions when an otherwise useful lap has one localized error.",
+      "notes": "Start with 55 L, Oreca 07 LMP2, full 12-hour layout, constant weather, zero tire wear and one unchanged setup. Drive five scored laps; up to two replacement laps are allowed, for seven scored laps maximum, if an error occurs. No live cue runner or beep is used."
+    }
+  ]
+}

@@ -1,9 +1,10 @@
-# Circuit D — protocole prêt, choix du circuit en attente
+# Circuit D — Sebring, cinq tours push
 
-Choisir parmi Imola, COTA, Sebring et Interlagos le circuit où le pilote peut
-répéter cinq à sept tours avec une constance proche de Bahreïn. La diversité
-des freinages départage les circuits qui passent ce critère. Ne pas appliquer
-le pack Bahreïn à ce nouveau circuit.
+Sebring est choisi le 12 septembre 2026 pour la constance attendue du pilote.
+Utiliser le tracé complet des 12 Heures. Imola reste un test supplémentaire
+possible. COTA est différé : sa diversité est intéressante, mais la variabilité
+du pilotage, notamment dans le secteur 3, compliquerait l'évaluation initiale.
+Ne pas appliquer le pack Bahreïn à ce nouveau circuit.
 
 ## Premier run : cinq tours push
 
@@ -17,7 +18,30 @@ le pack Bahreïn à ce nouveau circuit.
 - Franchir la ligne après le dernier tour pour le clôturer. Attendre la fin
   d'écriture du DuckDB et noter immédiatement les erreurs par tour/virage.
 
-Le lanceur et la fiche de session seront liés au circuit choisi avant le run.
+## Commande avant le départ
+
+Activer d'abord l'enregistrement natif dans LMU. Le switch ci-dessous confirme
+cette action; il ne l'effectue pas et ne prouve pas que l'enregistrement tourne.
+
+```powershell
+Set-Location 'F:\OneDrive\licor'
+.venv\Scripts\python.exe scripts\build_sebring_push_pack.py --verify-only
+& .\data\processed\experimental\sebring_lmp2_transfer_2026_09\push_baseline_pack_v1\start_push_baseline.cmd -ConfirmTelemetryRecording
+```
+
+Si le pack n'existe pas sur une autre machine, le construire une fois avec
+`.venv\Scripts\python.exe scripts\build_sebring_push_pack.py`.
+Le lanceur `.cmd` limite le contournement de la politique PowerShell au processus
+appelé; aucun changement permanent de la politique système n'est nécessaire.
+Garder la fenêtre ouverte pendant le run. Après le dernier tour, arrêter/exporter
+la télémétrie et attendre la fin d'écriture, puis appuyer sur Entrée dans cette
+fenêtre. Le lanceur affiche le `RunId` (`sebring_push_...`), crée une fiche de
+session et référence le fichier Sebring actualisé s'il est unique. Il ne déplace
+ni ne supprime la télémétrie. Un fichier absent ou plusieurs candidats exigent
+une liaison manuelle; aucune session n'est alors considérée validée.
+Transmettre le RunId et les erreurs par numéro de tour affiché/virage/phase,
+ou confirmer qu'il n'y a aucune erreur notable. Ne pas effacer les tours imparfaits.
+
 Il n'y a aucun cue à cette étape. Aucune donnée LICO locale ne peut être utilisée
 pour régler la première prédiction prospective.
 
